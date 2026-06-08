@@ -21,7 +21,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 // Assets
 import LoadingGif from '../../utils/LoadingMan.gif';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // =========================================================
 // 1. SUB-COMPONENTS FOR FORM FILLING

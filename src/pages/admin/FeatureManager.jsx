@@ -6,7 +6,7 @@ import { useITSessionManager } from '../../hooks/useITSessionManager';
 import GlassHeader from '../../components/common/GlassHeader';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
-const API_BASE = 'https://noteloom-api.vercel.app'; // Or import from utils
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; // Or import from utils
 
 const FeatureManager = () => {
   const { isDarkMode } = useTheme();

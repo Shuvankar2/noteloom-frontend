@@ -8,7 +8,7 @@ import ThemeToggle from "../../components/common/ThemeToggle";
 import Footer from "../../components/common/Footer";
 
 // Define API_BASE locally or import it from a config file if you have one
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const ITLoginPage = () => {
   const { isDarkMode } = useTheme();

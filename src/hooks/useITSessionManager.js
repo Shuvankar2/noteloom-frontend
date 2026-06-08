@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 
 // Ensure API_BASE matches your config
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 export const useITSessionManager = () => {
   const [isSessionValid, setIsSessionValid] = useState(false);

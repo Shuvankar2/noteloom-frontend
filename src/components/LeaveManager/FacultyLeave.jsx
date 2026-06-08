@@ -9,7 +9,9 @@ import {
   CheckCircle, Printer, Send, Calendar, Clock, 
   ChevronRight, ArrowLeft, User 
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext'; 
+import { useTheme } from '../../context/ThemeContext';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (
@@ -56,7 +58,7 @@ const FacultyLeave = () => {
                 return;
             }
 
-            const res = await axios.get('https://noteloom-api.vercel.app/session/info', { 
+            const res = await axios.get(`${API_BASE}/session/info`, { 
                 withCredentials: true,
                 headers: { 
                     // ATTACH THE TOKEN HERE
@@ -94,7 +96,7 @@ const FacultyLeave = () => {
 
   const fetchHistory = async () => {
     try {
-        const res = await axios.get(`https://noteloom-api.vercel.app/api/leave/history/${userProfile.id}`);
+        const res = await axios.get(`${API_BASE}/api/leave/history/${userProfile.id}`);
         setHistory(res.data);
     } catch(err) {
         console.error("Failed to load history");
@@ -114,7 +116,7 @@ const FacultyLeave = () => {
         reason: formData.get('reason')
     };
     try {
-        const res = await axios.post('https://noteloom-api.vercel.app/api/leave/apply', data);
+        const res = await axios.post(`${API_BASE}/api/leave/apply`, data);
         setLastSubmit(res.data);
     } catch(err) { alert('Error submitting leave'); }
   };

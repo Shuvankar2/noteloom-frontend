@@ -14,7 +14,7 @@ import LogoWithFallback from '../../components/common/LogoWithFallback';
 import CollegeMismatchWarning from '../auth/CollegeMismatchWarning';
 import { useErrorPopup } from '../../context/ErrorPopupContext';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const LoginPage = () => {
   const [selectedCollege, setSelectedCollege] = useState('');

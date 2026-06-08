@@ -3,7 +3,7 @@ import axios from 'axios';
 import { CheckCircle, AlertCircle, Download, FileText, DollarSign } from 'lucide-react';
 import { useSessionManager } from '../../hooks/useSessionManager';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const StudentExamPortal = () => {
   const { user, profile } = useSessionManager();

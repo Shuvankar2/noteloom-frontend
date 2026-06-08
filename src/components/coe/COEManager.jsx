@@ -18,7 +18,7 @@ import ModernPdfViewer from '../../components/ModernPDFViewer';
 // Add this line with your other imports
 import { useErrorPopup } from '../../context/ErrorPopupContext';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // ==========================================
 // 1. SUB-COMPONENTS (Feature Modules)

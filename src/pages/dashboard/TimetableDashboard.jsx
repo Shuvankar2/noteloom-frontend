@@ -14,7 +14,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // --- SUB-COMPONENT: Personal Calendar (Revamped Google-Cal Style) ---
 const PersonalCalendar = ({ theme, user }) => {

@@ -13,7 +13,7 @@ import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 import LOADER_GIF from '../../utils/LoadingMan.gif'; 
 
 // Animation Variants

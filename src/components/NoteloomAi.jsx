@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { useTheme } from '../context/ThemeContext';
 import mermaid from 'mermaid';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 
 // --- SUB-COMPONENT: Mermaid Diagram Renderer (Dark Mode + Frosted Glass) ---

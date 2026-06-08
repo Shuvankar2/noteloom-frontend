@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 
 // Adjust this if your config is elsewhere
-export const API_BASE = 'https://noteloom-api.vercel.app';
+export const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 export const useSessionManager = () => {
   const [isSessionValid, setIsSessionValid] = useState(true);

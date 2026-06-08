@@ -4,7 +4,7 @@ import { ArrowLeft, Search, AlertCircle, Edit, Trash2 } from "lucide-react";
 import { useTheme } from '../../context/ThemeContext';
 import GlassHeader from '../../components/common/GlassHeader';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const UserManagementCard = ({ user, onToggle, onDelete }) => {
   const { isDarkMode } = useTheme();

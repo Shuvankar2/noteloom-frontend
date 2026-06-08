@@ -10,7 +10,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
 // Define API_BASE or import it from your config
-const API_BASE = 'https://noteloom-api.vercel.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const AddEditContentPage = () => {
   const { isDarkMode } = useTheme();

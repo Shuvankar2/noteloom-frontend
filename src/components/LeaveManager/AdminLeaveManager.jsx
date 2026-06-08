@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Check, X, Scan, User, Briefcase, Calendar, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext'; 
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (
     <div className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b shadow-sm transition-all duration-300 ${
@@ -40,7 +42,7 @@ useEffect(() => {
 
                 if (!token) return;
 
-                const res = await axios.get('https://noteloom-api.vercel.app/session/info', { 
+                const res = await axios.get(`${API_BASE}/session/info`, {
                     withCredentials: true,
                     headers: { 
                         // ATTACH THE TOKEN
@@ -83,7 +85,7 @@ useEffect(() => {
     const fetchRequests = async () => {
         const query = `?status=${filter.status}&dept=${filter.dept}&search=${filter.search}`;
         try {
-            const res = await axios.get(`https://noteloom-api.vercel.app/api/leave/admin/requests${query}`);
+            const res = await axios.get(`${API_BASE}/api/leave/admin/requests${query}`);
             setRequests(res.data);
         } catch(err) { console.error("Error fetching requests"); }
     };
@@ -92,7 +94,7 @@ useEffect(() => {
         const remarks = prompt(`Enter remarks for ${status} (Optional):`, "");
         if (remarks === null) return; 
         
-        await axios.put(`https://noteloom-api.vercel.app/api/leave/admin/action/${id}`, { status, remarks });
+        await axios.put(`${API_BASE}/api/leave/admin/action/${id}`, { status, remarks });
         fetchRequests(); 
     };
 
