@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -16,8 +15,8 @@ import GlassHeader from '../../components/common/GlassHeader';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // ==========================================
 // SUB-COMPONENTS
@@ -144,17 +143,11 @@ const FeesTrackRecords = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('sessionToken');
-        
         // 1. Fetch Exam Fee Records (Real Data)
-        const examRes = await axios.get(`${API_BASE}/api/coe/admin/exam-forms`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const examRes = await backendApi.get('/api/coe/admin/exam-forms');
         
         // 2. Fetch Semester Fee Records (Real Data - even if empty)
-        const semRes = await axios.get(`${API_BASE}/api/coe/admin/semester-fees`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const semRes = await backendApi.get('/api/coe/admin/semester-fees');
 
         setExamRecords(examRes.data || []);
         setSemesterRecords(semRes.data || []);

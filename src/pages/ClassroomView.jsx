@@ -7,7 +7,8 @@ import {
   Upload, Eye, Play, FolderKanban, X, CheckCircle, Circle, CloudOff, Download, Check, Plus, FolderPlus 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext'; 
+import { useTheme } from '../context/ThemeContext';
+import backendApi from '../utils/backend-api'; 
 // import NoteloomAi from '../components/NoteloomAi';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
@@ -114,43 +115,30 @@ const ClassroomView = () => {
   // --- Data Fetching ---
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('sessionToken');
       if (!state?.className) {
-      const classRes = await fetch(`${API_BASE}/api/classrooms`, { 
-          headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (classRes.ok) {
-          const allClasses = await classRes.json();
-          // Find the current class in the user's list
-          const currentClass = allClasses.find(c => c._id === id);
-          if (currentClass) {
-              setClassroomName(currentClass.name);
-          } else {
-              setClassroomName("Classroom View");
-          }
+        const classRes = await backendApi.get('/api/classrooms');
+        const currentClass = classRes.data.find(c => c._id === id);
+        if (currentClass) {
+            setClassroomName(currentClass.name);
+        } else {
+            setClassroomName("Classroom View");
+        }
       }
-    }
-      const sessionRes = await fetch(`${API_BASE}/session/info`, { headers: { 'Authorization': `Bearer ${token}` }});
-      if (sessionRes.ok) {
-        const data = await sessionRes.json();
-        setUserRole(data.role);
-      }
-      const modRes = await fetch(`${API_BASE}/api/classrooms/${id}/modules`, { headers: { 'Authorization': `Bearer ${token}` }});
-      if (modRes.ok) {
-        const mods = await modRes.json();
-        setModules(mods);
-        if (mods.length > 0 && !activeModule) setActiveModule(mods[0]);
-      }
+      const sessionRes = await backendApi.get('/session/info');
+      setUserRole(sessionRes.data.role);
+      
+      const modRes = await backendApi.get(`/api/classrooms/${id}/modules`);
+      const mods = modRes.data;
+      setModules(mods);
+      if (mods.length > 0 && !activeModule) setActiveModule(mods[0]);
     } catch (e) { console.error(e); }
   };
 
   const fetchContent = async () => {
     if (!activeModule) return;
     try {
-      const res = await fetch(`${API_BASE}/api/modules/${activeModule._id}/content`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) setContentList(await res.json());
+      const res = await backendApi.get(`/api/modules/${activeModule._id}/content`);
+      setContentList(res.data);
     } catch (e) { console.error(e); }
   };
 
@@ -158,14 +146,15 @@ const ClassroomView = () => {
   useEffect(() => { fetchContent(); }, [activeModule]);
 
   // --- Handlers ---
+ // --- Handlers ---
   const handleCreateModule = async (e) => {
     e.preventDefault();
-    await fetch(`${API_BASE}/api/classrooms/${id}/modules`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: moduleTitle })
-    });
-    setModuleTitle(""); setShowModuleModal(false); fetchData();
+    try {
+      await backendApi.post(`/api/classrooms/${id}/modules`, { title: moduleTitle });
+      setModuleTitle(""); 
+      setShowModuleModal(false); 
+      fetchData();
+    } catch (e) { console.error(e); }
   };
 
   // 1. ADD FILES TO QUEUE
@@ -173,7 +162,7 @@ const ClassroomView = () => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
       setSelectedFiles(prev => [...prev, ...newFiles]);
-      e.target.value = null; // Allow re-selecting same file
+      e.target.value = null; 
     }
   };
 
@@ -199,38 +188,26 @@ const ClassroomView = () => {
       formData.append('type', typeMap[contentForm.type] || 'resource');
       
       if (contentForm.link) formData.append('videoUrl', contentForm.link);
-
-      // --- NEW: SEND PERMISSION FLAG ---
-      // We send 'allowDownload' state (defaults to true)
       formData.append('allowDownload', allowDownload); 
 
-      // Handle File Stacking (Multiple Files)
       if (selectedFiles.length > 0) {
         selectedFiles.forEach((file) => {
           formData.append('files', file); 
         });
       }
 
-      const response = await fetch(`${API_BASE}/api/modules/${activeModule._id}/content`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` },
-        body: formData
-      });
+      await backendApi.post(`/api/modules/${activeModule._id}/content`, formData);
 
-      if (response.ok) {
-        setIsUploading(false);
-        setShowContentModal(false); 
-        setContentForm({ title: '', desc: '', type: '', link: '' }); 
-        setSelectedFiles([]); 
-        setAllowDownload(true); // Reset checkbox to default
-        fetchContent(); 
-      } else {
-        const data = await response.json();
-        throw new Error(data.error || "Upload failed");
-      }
+      setIsUploading(false);
+      setShowContentModal(false); 
+      setContentForm({ title: '', desc: '', type: '', link: '' }); 
+      setSelectedFiles([]); 
+      setAllowDownload(true); 
+      fetchContent(); 
+
     } catch (error) { 
       console.error(error);
-      alert("Upload failed: " + error.message); 
+      alert("Upload failed: " + (error.response?.data?.error || error.message)); 
       setIsUploading(false); 
     }
   };
@@ -238,30 +215,37 @@ const ClassroomView = () => {
   const handleDeleteContent = async (contentId) => {
     if(!confirm("Are you sure?")) return;
     try {
-      await fetch(`${API_BASE}/api/content/${contentId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
+      await backendApi.delete(`/api/content/${contentId}`);
       fetchContent();
-    } catch(e) { alert("Failed to delete"); }
+    } catch(e) { alert(e.response?.data?.error || "Failed to delete"); }
   };
 
-  const openEditModal = (item) => {
-    setEditingItem(item);
-    setContentForm({ title: item.title, desc: item.description || '', type: item.type, link: item.videoUrl || '' });
-    setShowEditModal(true);
+  // --- NEW: Toggle Download Permission Handler ---
+  const handleToggleDownload = async (contentId, currentPermission) => {
+    // Optimistic UI Update
+    const updatedList = contentList.map(item => 
+      item._id === contentId ? { ...item, allowDownload: !currentPermission } : item
+    );
+    setContentList(updatedList);
+
+    try {
+      await backendApi.put(`/api/content/${contentId}/toggle-download`, { 
+        allowDownload: !currentPermission 
+      });
+    } catch (err) { console.error("Failed to update permission"); }
   };
 
   const handleUpdateContent = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`${API_BASE}/api/content/${editingItem._id}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: contentForm.title, description: contentForm.desc })
+      await backendApi.put(`/api/content/${editingItem._id}`, { 
+        title: contentForm.title, 
+        description: contentForm.desc 
       });
-      setShowEditModal(false); setEditingItem(null); fetchContent();
-    } catch(e) { alert("Update failed"); }
+      setShowEditModal(false); 
+      setEditingItem(null); 
+      fetchContent();
+    } catch(e) { alert(e.response?.data?.error || "Update failed"); }
   };
 
   // --- NEW: Mark as Completed Handler ---
@@ -274,33 +258,14 @@ const ClassroomView = () => {
     setContentList(updatedList);
 
     try {
-      // API call to save status
-      await fetch(`${API_BASE}/api/content/${contentId}/complete`, { 
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
+      await backendApi.post(`/api/content/${contentId}/complete`);
     } catch (err) { console.error("Failed to update completion status"); }
   };
 
-  // --- NEW: Toggle Download Permission Handler ---
-  const handleToggleDownload = async (contentId, currentPermission) => {
-    // Optimistic UI Update
-    const updatedList = contentList.map(item => 
-      item._id === contentId ? { ...item, allowDownload: !currentPermission } : item
-    );
-    setContentList(updatedList);
-
-    try {
-      // API call to toggle permission
-      await fetch(`${API_BASE}/api/content/${contentId}/toggle-download`, { 
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ allowDownload: !currentPermission })
-      });
-    } catch (err) { console.error("Failed to update permission"); }
+  const openEditModal = (item) => {
+    setEditingItem(item);
+    setContentForm({ title: item.title, desc: item.description || '', type: item.type, link: item.videoUrl || '' });
+    setShowEditModal(true);
   };
 
   const filteredContent = activeTab === 'All' 

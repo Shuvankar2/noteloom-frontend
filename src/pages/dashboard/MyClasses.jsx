@@ -12,7 +12,7 @@ import LOADER_GIF from '../../utils/LoadingMan.gif';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown'; 
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const getYearFromSemester = (sem) => {
   if (sem <= 2) return "1st Year";
@@ -69,28 +69,23 @@ const MyClasses = () => {
          return;
       }
 
-      const sessionRes = await fetch(`${API_BASE}/session/info`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (sessionRes.ok) {
-        const sessionData = await sessionRes.json();
-        setCurrentUser(sessionData.user);
-        setCollegeName(sessionData.tenant?.name || 'My College');
-      }
+      // Automatically passes tokens via interceptor
+      const sessionRes = await backendApi.get('/session/info');
+      setCurrentUser(sessionRes.data.user);
+      setCollegeName(sessionRes.data.tenant?.name || 'My College');
 
       const [classRes, subRes, deptRes] = await Promise.all([
-        fetch(`${API_BASE}/api/classrooms`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/all-subjects`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/departments`, { headers: { 'Authorization': `Bearer ${token}` } })
+        backendApi.get('/api/classrooms'),
+        backendApi.get('/api/all-subjects'),
+        backendApi.get('/api/departments')
       ]);
 
-      if (classRes.ok) setClasses(await classRes.json());
-      if (subRes.ok) setAvailableSubjects(await subRes.json());
-      if (deptRes.ok) setDepartments(await deptRes.json());
+      setClasses(classRes.data);
+      setAvailableSubjects(subRes.data);
+      setDepartments(deptRes.data);
 
     } catch (error) {
-      console.error(error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -164,59 +159,40 @@ const MyClasses = () => {
   const handleInvite = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/api/classrooms/${inviteClassId}/enroll`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ uid: inviteUid })
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        alert("Student enrolled successfully!");
-        setInviteUid('');
-        setShowInviteModal(false);
-        fetchData();
-      } else {
-        alert(data.error || "Failed to enroll");
-      }
+      await backendApi.post(`/api/classrooms/${inviteClassId}/enroll`, { uid: inviteUid });
+      alert("Student enrolled successfully!");
+      setInviteUid('');
+      setShowInviteModal(false);
+      fetchData();
     } catch (error) {
-      alert("Error enrolling student");
+      alert(error.response?.data?.error || "Error enrolling student");
     }
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_BASE}/api/classrooms`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
+      await backendApi.post('/api/classrooms', formData);
+      setShowModal(false);
+      fetchData();
+      setFormData({
+        subjectName: '', subjectCode: '', batchYear: new Date().getFullYear(),
+        stream: '', semester: 1, addMode: 'later', rangeStart: '', rangeEnd: ''
       });
-      if (res.ok) {
-        setShowModal(false);
-        fetchData();
-        setFormData({
-          subjectName: '', subjectCode: '', batchYear: new Date().getFullYear(),
-          stream: '', semester: 1, addMode: 'later', rangeStart: '', rangeEnd: ''
-        });
-        setSelectedDeptId('');
-      }
-    } catch (error) { alert("Failed to create class"); }
+      setSelectedDeptId('');
+    } catch (error) { 
+      alert(error.response?.data?.error || "Failed to create class"); 
+    }
   };
 
   const handleDelete = async (id) => {
     if(!confirm("Delete this classroom?")) return;
-    await fetch(`${API_BASE}/api/classrooms/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    fetchData();
+    try {
+      await backendApi.delete(`/api/classrooms/${id}`);
+      fetchData();
+    } catch (error) {
+      alert("Failed to delete class");
+    }
   };
 
   const ClassMenu = ({ classId }) => {
@@ -224,12 +200,12 @@ const MyClasses = () => {
     
     const handleLeaveClass = async () => {
       if(!confirm("Are you sure you want to leave this class?")) return;
-      const res = await fetch(`${API_BASE}/api/classrooms/${classId}/unenroll`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) fetchData();
-      else alert("Failed to leave class");
+      try {
+        await backendApi.delete(`/api/classrooms/${classId}/unenroll`);
+        fetchData();
+      } catch (error) {
+        alert(error.response?.data?.error || "Failed to leave class");
+      }
     };
 
     return (

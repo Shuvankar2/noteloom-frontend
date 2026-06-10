@@ -9,7 +9,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const ITAdminDashboard = () => {
   const { isDarkMode } = useTheme();
@@ -76,26 +76,23 @@ const ITAdminDashboard = () => {
 });
 
   // --- DATA FETCHING ---
+  // --- DATA FETCHING ---
   const fetchColleges = async () => {
     try {
-      const response = await fetch(`${API_BASE}/it-admin/colleges`, {
+      const response = await backendApi.get('/it-admin/colleges', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
       });
-      if (response.ok) {
-        setColleges(await response.json());
-      }
+      setColleges(response.data);
     } catch (error) { console.error("Error fetching colleges", error); }
   };
 
   const fetchITUsers = async () => {
     if (itUser?.role !== 'noteloom_admin') return;
     try {
-      const response = await fetch(`${API_BASE}/it-admin/users`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` },
+      const response = await backendApi.get('/it-admin/users', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
       });
-      if (response.ok) {
-        setItUsers(await response.json());
-      }
+      setItUsers(response.data);
     } catch (error) { console.error("Error fetching IT users", error); }
   };
 
@@ -134,16 +131,10 @@ const ITAdminDashboard = () => {
     if (!confirm(`Are you sure you want to ${newStatus === 'active' ? 'Enable' : 'Disable'} this college?`)) return;
 
     try {
-      const response = await fetch(`${API_BASE}/it-admin/colleges/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ status: newStatus })
+      await backendApi.patch(`/it-admin/colleges/${id}/status`, { status: newStatus }, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
       });
-      if (response.ok) fetchColleges();
-      else alert("Failed to update status");
+      fetchColleges();
     } catch (error) { alert("Error updating status"); }
   };
 
@@ -153,83 +144,59 @@ const ITAdminDashboard = () => {
     if (!confirm(`WARNING: This will suspend the college and schedule permanent deletion in 3 MONTHS.\n\nAre you sure?`)) return;
 
     try {
-      const response = await fetch(`${API_BASE}/it-admin/colleges/${id}`, {
-        method: 'DELETE',
+      await backendApi.delete(`/it-admin/colleges/${id}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
       });
-      if (response.ok) {
-        alert("College suspended and scheduled for deletion.");
-        fetchColleges();
-      } else {
-        alert("Delete failed");
-      }
+      alert("College suspended and scheduled for deletion.");
+      fetchColleges();
     } catch (error) { alert("Error deleting college"); }
   };
 
   const handleCreateCollege = async (e) => {
     if (e) e.preventDefault();
     try {
-      const response = await fetch(`${API_BASE}/it-admin/colleges`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newCollegeData)
+      await backendApi.post('/it-admin/colleges', newCollegeData, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
       });
 
-      if (response.ok) {
-        alert("College created successfully!");
-        setNewCollegeData({ name: '', logoUrl: '', adminName: '', adminEmail: '', adminPassword: '' });
-        setShowCreateForm(false);
-        fetchColleges();
-      } else {
-        const data = await response.json();
-        alert(data.error || "Failed to create college");
-      }
-    } catch (error) { alert("Error creating college"); }
+      alert("College created successfully!");
+      setNewCollegeData({ name: '', logoUrl: '', location: '', category: 'Engineering', featured: false, adminName: '', adminEmail: '', adminPassword: '' });
+      setShowCreateForm(false);
+      fetchColleges();
+    } catch (error) { 
+      alert(error.response?.data?.error || "Error creating college"); 
+    }
   };
 
 
   const handleUpdateCollege = async (e) => {
-  if (e) e.preventDefault();
-  
-  if (!editingCollege?._id) {
-    alert("Error: No college ID found");
-    return;
-  }
+    if (e) e.preventDefault();
+    
+    if (!editingCollege?._id) {
+      alert("Error: No college ID found");
+      return;
+    }
 
-  try {
-    const response = await fetch(`${API_BASE}/it-admin/colleges/${editingCollege._id}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: editingCollege.name,
-        logoUrl: editingCollege.logoUrl,
-        location: editingCollege.location,
-        category: editingCollege.category,
-        featured: editingCollege.featured
-      })
-    });
+    try {
+      await backendApi.put(`/it-admin/colleges/${editingCollege._id}`, {
+          name: editingCollege.name,
+          logoUrl: editingCollege.logoUrl,
+          location: editingCollege.location,
+          category: editingCollege.category,
+          featured: editingCollege.featured
+        }, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
+      });
 
-    const data = await response.json();
-
-    if (response.ok) {
       alert("College details updated successfully!");
       setShowEditModal(false);
       setEditingCollege(null);
       fetchColleges(); // This triggers a fresh GET request to show new data
-    } else {
-      alert(data.error || "Failed to update college");
+    } catch (error) {
+      console.error("Update error:", error);
+      alert(error.response?.data?.error || "Network error: Could not update college");
     }
-  } catch (error) {
-    console.error("Update error:", error);
-    alert("Network error: Could not update college");
-  }
-};
+  };
 
   const getDashboardTitle = () => {
     if (itUser?.role === 'noteloom_admin') return 'Note Loom Admin';

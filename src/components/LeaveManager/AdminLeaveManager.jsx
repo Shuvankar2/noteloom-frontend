@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Check, X, Scan, User, Briefcase, Calendar, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext'; 
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (
@@ -38,17 +38,7 @@ useEffect(() => {
         const fetchSession = async () => {
             try {
                 // RETRIEVE TOKEN
-                const token = localStorage.getItem('sessionToken');
-
-                if (!token) return;
-
-                const res = await axios.get(`${API_BASE}/session/info`, {
-                    withCredentials: true,
-                    headers: { 
-                        // ATTACH THE TOKEN
-                        'Authorization': `Bearer ${token}` 
-                    }
-                });
+                const res = await backendApi.get('/session/info');
                 
                 if (res.data && res.data.user) {
                     setAdminProfile({
@@ -85,7 +75,7 @@ useEffect(() => {
     const fetchRequests = async () => {
         const query = `?status=${filter.status}&dept=${filter.dept}&search=${filter.search}`;
         try {
-            const res = await axios.get(`${API_BASE}/api/leave/admin/requests${query}`);
+            const res = await backendApi.get(`/api/leave/admin/requests${query}`);
             setRequests(res.data);
         } catch(err) { console.error("Error fetching requests"); }
     };
@@ -94,7 +84,7 @@ useEffect(() => {
         const remarks = prompt(`Enter remarks for ${status} (Optional):`, "");
         if (remarks === null) return; 
         
-        await axios.put(`${API_BASE}/api/leave/admin/action/${id}`, { status, remarks });
+        await backendApi.put(`/api/leave/admin/action/${id}`, { status, remarks });
         fetchRequests(); 
     };
 

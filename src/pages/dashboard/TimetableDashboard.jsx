@@ -14,7 +14,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 // --- SUB-COMPONENT: Personal Calendar (Revamped Google-Cal Style) ---
 const PersonalCalendar = ({ theme, user }) => {
@@ -32,29 +32,26 @@ const PersonalCalendar = ({ theme, user }) => {
   }, []);
 
   const fetchEvents = async () => {
-    const res = await fetch(`${API_BASE}/api/calendar/events`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    if(res.ok) setEvents(await res.json());
+    try {
+      const res = await backendApi.get('/api/calendar/events');
+      setEvents(res.data);
+    } catch(e) { console.error(e); }
   };
 
   const handleAddEvent = async () => {
     if(!newEvent.title) return;
-    await fetch(`${API_BASE}/api/calendar/events`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newEvent, date: selectedDate })
-    });
-    setNewEvent({ title: '', type: 'Note', description: '' });
-    fetchEvents();
+    try {
+      await backendApi.post('/api/calendar/events', { ...newEvent, date: selectedDate });
+      setNewEvent({ title: '', type: 'Note', description: '' });
+      fetchEvents();
+    } catch(e) { console.error(e); }
   };
 
   const handleDelete = async (id) => {
-    await fetch(`${API_BASE}/api/calendar/events/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    fetchEvents();
+    try {
+      await backendApi.delete(`/api/calendar/events/${id}`);
+      fetchEvents();
+    } catch(e) { console.error(e); }
   };
 
   // --- Calendar Logic ---
@@ -263,54 +260,50 @@ const RoutineBuilder = ({ theme, role, user, selectedBatchProp }) => {
   }, [selectedBatch, activeDay]);
 
   const fetchDepts = async () => {
-    const res = await fetch(`${API_BASE}/api/departments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) {
-        const data = await res.json();
-        setDepartments(data);
-        if(role === 'faculty' && user.department) {
-            const myDept = data.find(d => d.name === user.department);
-            if(myDept) setSelectedDept(myDept);
-        }
-    }
+    try {
+      const res = await backendApi.get('/api/departments');
+      setDepartments(res.data);
+      if(role === 'faculty' && user.department) {
+          const myDept = res.data.find(d => d.name === user.department);
+          if(myDept) setSelectedDept(myDept);
+      }
+    } catch(e) { console.error(e); }
   };
 
   const fetchBatches = async () => {
-    const res = await fetch(`${API_BASE}/api/batches`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) {
-        const allBatches = await res.json();
-        setBatches(allBatches);
+    try {
+      const res = await backendApi.get('/api/batches');
+      const allBatches = res.data;
+      setBatches(allBatches);
 
-        if (role === 'student') {
-            const myBatch = allBatches.find(b => b.students && b.students.includes(user.id));
-            if (myBatch) {
-                setSelectedBatch(myBatch);
-                setIsStudentEnrolled(true);
-            } else {
-                setIsStudentEnrolled(false);
-            }
-        }
-    }
+      if (role === 'student') {
+          const myBatch = allBatches.find(b => b.students && b.students.includes(user.id));
+          if (myBatch) {
+              setSelectedBatch(myBatch);
+              setIsStudentEnrolled(true);
+          } else {
+              setIsStudentEnrolled(false);
+          }
+      }
+    } catch(e) { console.error(e); }
   };
 
   const fetchRoutine = async () => {
-    const res = await fetch(`${API_BASE}/api/routine/batch/${selectedBatch._id}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) {
-      const data = await res.json();
-      const dayRoutine = data.find(r => r.dayOfWeek === activeDay);
+    try {
+      const res = await backendApi.get(`/api/routine/batch/${selectedBatch._id}`);
+      const dayRoutine = res.data.find(r => r.dayOfWeek === activeDay);
       // Initialize 10 slots if empty for faculty/admin editing
       setPeriods(dayRoutine ? dayRoutine.periods : Array(10).fill(null).map((_, i) => ({ 
         periodNumber: i+1, startTime: '', endTime: '', subject: '', facultyName: '', roomNo: '', isBreak: false 
       })));
-    }
+    } catch(e) { console.error(e); }
   };
 
   const handleSaveRoutine = async () => {
-    await fetch(`${API_BASE}/api/routine/batch/${selectedBatch._id}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dayOfWeek: activeDay, periods })
-    });
-    alert('Routine Saved!');
+    try {
+      await backendApi.post(`/api/routine/batch/${selectedBatch._id}`, { dayOfWeek: activeDay, periods });
+      alert('Routine Saved!');
+    } catch(e) { console.error(e); }
   };
 
   const updatePeriod = (index, field, value) => {
@@ -581,39 +574,41 @@ const LessonTracker = ({ theme, role, user }) => {
   }, [selectedBatch, weekOffset]);
 
   const fetchDepts = async () => {
-    const res = await fetch(`${API_BASE}/api/departments`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) setDepartments(await res.json());
+    try {
+      const res = await backendApi.get('/api/departments');
+      setDepartments(res.data);
+    } catch(e) { console.error(e); }
   };
 
   const fetchBatches = async () => {
-    const res = await fetch(`${API_BASE}/api/batches`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) setBatches(await res.json());
+    try {
+      const res = await backendApi.get('/api/batches');
+      setBatches(res.data);
+    } catch(e) { console.error(e); }
   };
 
   const fetchStudentBatch = async () => {
-    const res = await fetch(`${API_BASE}/api/batches`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-    if(res.ok) {
-        const allBatches = await res.json();
-        const myBatch = allBatches.find(b => b.students && b.students.includes(user.id));
-        if (myBatch) {
-            setSelectedBatch(myBatch);
-            setIsStudentEnrolled(true);
-        } else {
-            setIsStudentEnrolled(false);
-        }
-    }
+    try {
+      const res = await backendApi.get('/api/batches');
+      const allBatches = res.data;
+      const myBatch = allBatches.find(b => b.students && b.students.includes(user.id));
+      if (myBatch) {
+          setSelectedBatch(myBatch);
+          setIsStudentEnrolled(true);
+      } else {
+          setIsStudentEnrolled(false);
+      }
+    } catch(e) { console.error(e); }
   };
 
   const fetchRoutineAndLogs = async () => {
-    // 1. Fetch Routine (Master Schedule)
-    const routineRes = await fetch(`${API_BASE}/api/routine/batch/${selectedBatch._id}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    const routineData = routineRes.ok ? await routineRes.json() : [];
-    setRoutines(routineData);
+    // 1. Fetch Routine
+    try {
+      const routineRes = await backendApi.get(`/api/routine/batch/${selectedBatch._id}`);
+      setRoutines(routineRes.data || []);
+    } catch (e) { setRoutines([]); }
 
     // 2. Fetch Logs for the Week
-    // Calculate Monday and Sunday dates for API
     const start = new Date(currentWeekStart);
     const end = new Date(currentWeekStart);
     end.setDate(end.getDate() + 6);
@@ -621,30 +616,24 @@ const LessonTracker = ({ theme, role, user }) => {
     const startStr = start.toISOString().split('T')[0];
     const endStr = end.toISOString().split('T')[0];
 
-    const logsRes = await fetch(`${API_BASE}/api/lessons?batchId=${selectedBatch._id}&startDate=${startStr}&endDate=${endStr}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    if (logsRes.ok) setLogs(await logsRes.json());
+    try {
+      const logsRes = await backendApi.get(`/api/lessons?batchId=${selectedBatch._id}&startDate=${startStr}&endDate=${endStr}`);
+      setLogs(logsRes.data);
+    } catch (e) { setLogs([]); }
   };
 
   // --- 3. ACTIONS ---
   const handleSaveLog = async () => {
     if (!editingLog.topicsCovered) return;
-
-    const res = await fetch(`${API_BASE}/api/lessons`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            batchId: selectedBatch._id,
-            ...editingLog
-        })
-    });
-
-    if (res.ok) {
-        setEditingLog(null);
-        fetchRoutineAndLogs(); // Refresh
-    } else {
-        alert("Failed to update log. Ensure you are not updating a future date.");
+    try {
+      await backendApi.post('/api/lessons', {
+          batchId: selectedBatch._id,
+          ...editingLog
+      });
+      setEditingLog(null);
+      fetchRoutineAndLogs(); // Refresh
+    } catch(e) {
+      alert(e.response?.data?.error || "Failed to update log. Ensure you are not updating a future date.");
     }
   };
 
@@ -876,8 +865,8 @@ const TimetableDashboard = () => {
   
     const fetchSession = async () => {
       try {
-        const res = await fetch(`${API_BASE}/session/info`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }});
-        if(res.ok) setSessionData(await res.json());
+        const res = await backendApi.get('/session/info');
+        setSessionData(res.data);
       } catch(e) { console.error(e); }
       setLoading(false);
     };

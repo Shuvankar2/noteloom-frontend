@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Loader2, FileText } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; // Ensure this matches your backend
+import backendApi from '../../utils/backend-api';
 
 // 1. Helper to handle color transparency for the Glass effect
 const hexToRgb = (hex) => {
@@ -56,17 +55,15 @@ const PdfAiSummarizer = ({ pdfUrl }) => {
       formData.append('file', blob, 'document.pdf');
       formData.append('taskType', 'summarize');
 
-      const apiRes = await fetch(`${API_BASE}/api/ai/summarize-file`, {
-        method: 'POST',
+      const apiRes = await backendApi.post('/api/ai/summarize-file', formData, {
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`
+            'Content-Type': 'multipart/form-data'
         },
-        body: formData,
         // ✅ CONNECT THE ABORT SIGNAL
         signal: abortControllerRef.current.signal 
       });
 
-      const data = await apiRes.json();
+      const data = apiRes.data;
       
       if (data.summary) {
         setSummary(data.summary);

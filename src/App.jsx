@@ -142,6 +142,9 @@ import COEManager from './components/coe/COEManager';
 import FacultyQuestionBank from './components/coe/FacultyQuestionBank';
 import StudentExamPortal from './components/coe/StudentExamPortal';
 
+//Backend Preview Status Showcase import
+import EnvironmentBadge from './components/common/EnvironmentBadge';
+
 
 // ✅ Helper: Identify system tenant
 const isSystemTenant = (tenant) =>

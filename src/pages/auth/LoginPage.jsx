@@ -14,7 +14,7 @@ import LogoWithFallback from '../../components/common/LogoWithFallback';
 import CollegeMismatchWarning from '../auth/CollegeMismatchWarning';
 import { useErrorPopup } from '../../context/ErrorPopupContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const LoginPage = () => {
   const [selectedCollege, setSelectedCollege] = useState('');
@@ -112,18 +112,16 @@ const LoginPage = () => {
 
     const fetchCollegeDetails = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/auth/public/colleges`);
-        if (response.ok) {
-          const allColleges = await response.json();
-          const currentCollege = allColleges.find(c => c.collegeCode === codeParam);
-          
-          if (currentCollege) {
-            setSelectedCollege(currentCollege.name); 
-            setIsFetchingCollege(false);
-          } else {
-            setCollegeNotFoundError(true);
-            setIsFetchingCollege(false);
-          }
+        const response = await backendApi.get('/api/auth/public/colleges');
+        const allColleges = response.data;
+        const currentCollege = allColleges.find(c => c.collegeCode === codeParam);
+        
+        if (currentCollege) {
+          setSelectedCollege(currentCollege.name); 
+          setIsFetchingCollege(false);
+        } else {
+          setCollegeNotFoundError(true);
+          setIsFetchingCollege(false);
         }
       } catch (error) {
         console.error("Error fetching college context:", error);
@@ -387,33 +385,22 @@ const LoginPage = () => {
 
     setEmailCheckLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/auth/check-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailToCheck.trim()
-        })
+      const response = await backendApi.post('/api/auth/check-email', {
+        email: emailToCheck.trim()
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.exists) {
-          setEmailExists(true);
-          setEmailChecked(true);
-          setErrors(prev => ({
-            ...prev,
-            email: `This email is already registered to ${data.collegeName}. Please use a different email address.`
-          }));
-          return true;
-        } else {
-          setEmailExists(false);
-          setEmailChecked(true);
-          setErrors(prev => ({ ...prev, email: '' }));
-          return false;
-        }
+      const data = response.data;
+      if (data.exists) {
+        setEmailExists(true);
+        setEmailChecked(true);
+        setErrors(prev => ({
+          ...prev,
+          email: `This email is already registered to ${data.collegeName}. Please use a different email address.`
+        }));
+        return true;
       } else {
         setEmailExists(false);
-        setEmailChecked(false);
+        setEmailChecked(true);
         setErrors(prev => ({ ...prev, email: '' }));
         return false;
       }
@@ -433,45 +420,32 @@ const LoginPage = () => {
       setEmailCheckLoading(true);
       setErrors({});
 
-      const response = await fetch(`${API_BASE}/api/auth/send-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          name: fullName,
-          collegeName: selectedCollege,
-          role,
-          type: 'signup',
-        }),
+      await backendApi.post('/api/auth/send-verification', {
+        email,
+        name: fullName,
+        collegeName: selectedCollege,
+        role,
+        type: 'signup',
       });
 
-      const data = await response.json();
       setEmailCheckLoading(false);
-
-      if (response.ok) {
-  setVerificationSent(true);
-
-  // 🔥 START OTP TIMER HERE
-  setVerificationTimer(RESEND_COOLDOWN_SECONDS);
-  setCanResendCode(false);
-
-  // optional if you keep separate cooldown
-  setIsResendCooldownActive(true);
-  setResendCooldown(RESEND_COOLDOWN_SECONDS);
-}
- else {
-        if (data.error && data.error.includes('User already registered')) {
-          setErrors({ email: data.error });
-          setVerificationSent(false);
-          return;
-        }
-        setErrors({ general: data.error || 'Failed to send verification email' });
-        setVerificationSent(false);
-      }
+      setVerificationSent(true);
+      setVerificationTimer(RESEND_COOLDOWN_SECONDS);
+      setCanResendCode(false);
+      setIsResendCooldownActive(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      
     } catch (error) {
       console.error('Verification request failed:', error);
       setEmailCheckLoading(false);
-      setErrors({ general: 'An unexpected error occurred.' });
+      const data = error.response?.data || {};
+      
+      if (data.error && data.error.includes('User already registered')) {
+        setErrors({ email: data.error });
+      } else {
+        setErrors({ general: data.error || 'Failed to send verification email' });
+      }
+      setVerificationSent(false);
     }
   };
 
@@ -480,26 +454,15 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const verifyResponse = await fetch(`${API_BASE}/api/auth/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          code: verificationCode.join(''),
-          type: 'signup'
-        })
+      await backendApi.post('/api/auth/verify-email', {
+        email: email,
+        code: verificationCode.join(''),
+        type: 'signup'
       });
-
-      if (!verifyResponse.ok) {
-        const error = await verifyResponse.json();
-        setErrors({ verificationCode: error.message || 'Invalid verification code' });
-        setLoading(false);
-        return;
-      }
 
       await registerUser();
     } catch (error) {
-      setErrors({ verificationCode: 'Verification failed' });
+      setErrors({ verificationCode: error.response?.data?.message || error.response?.data?.error || 'Invalid verification code' });
       setLoading(false);
     }
   };
@@ -508,11 +471,8 @@ const LoginPage = () => {
     try {
       setLoading(true);
 
-      // 1. Get the correct College Code from URL or Storage
       const storedCode = new URLSearchParams(window.location.search).get('code') || localStorage.getItem('selectedCollegeCode');
 
-      // 2. Create a JSON payload 
-      // (This matches the new Backend logic that expects JSON, not FormData)
       const payload = {
         fullName,
         email,
@@ -521,7 +481,6 @@ const LoginPage = () => {
         collegeName: selectedCollege,
         collegeCode: storedCode, 
 
-        // Spread syntax to conditionally add fields based on role
         ...(role === 'student' && {
           phoneNumber: formData.phoneNumber,
           gender: formData.gender,
@@ -549,95 +508,72 @@ const LoginPage = () => {
         })
       };
 
-      // 3. Send as JSON
-      const response = await fetch(`${API_BASE}/api/auth/role-signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json' // <--- Tells backend to parse as JSON
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
+      const response = await backendApi.post('/api/auth/role-signup', payload);
+      const data = response.data;
       
-      if (response.ok) {
-        // ✅ NEW: Capture the generated UID (e.g., 100190000001) so we can show it in Step 4
-        if (data.uid) {
-          sessionStorage.setItem('registeredUid', data.uid);
-        }
-        
-        setCurrentStep(4);
-      } else {
-        if (data.error && data.error.includes('User already registered')) {
-          setExistingUserCollege(data.collegeName || 'Unknown College');
-          setEmailCheckStatus(data.role ? 'same_college' : 'different_college');
-          setShowExistingUserModal(true);
-        } else {
-          setErrors({ general: data.error || 'Registration failed' });
-          triggerPopup(data.error || 'Registration failed', 'error');
-        }
+      if (data.uid) {
+        sessionStorage.setItem('registeredUid', data.uid);
       }
+      
+      setCurrentStep(4);
     } catch (error) {
+      const data = error.response?.data || {};
+      if (data.error && data.error.includes('User already registered')) {
+        setExistingUserCollege(data.collegeName || 'Unknown College');
+        setEmailCheckStatus(data.role ? 'same_college' : 'different_college');
+        setShowExistingUserModal(true);
+      } else {
+        setErrors({ general: data.error || 'Registration failed' });
+        triggerPopup(data.error || 'Registration failed', 'error');
+      }
       console.error("Signup Error:", error);
-      setErrors({ general: 'Registration failed. Server not responding.' });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
-  if (e) e.preventDefault();
-  setLoading(true); // Triggers "Processing..." state
+    if (e) e.preventDefault();
+    setLoading(true);
 
-  const params = new URLSearchParams(window.location.search);
-  const collegeCode = params.get('code') || localStorage.getItem('selectedCollegeCode');
+    const params = new URLSearchParams(window.location.search);
+    const collegeCode = params.get('code') || localStorage.getItem('selectedCollegeCode');
 
-  if (!collegeCode) {
-    alert("Institution code missing. Please select your college again.");
-    setLoading(false);
-    navigate('/college-selection');
-    return;
-  }
+    if (!collegeCode) {
+      alert("Institution code missing. Please select your college again.");
+      setLoading(false);
+      navigate('/college-selection');
+      return;
+    }
 
-  try {
-    if (isLogin) {
-      const response = await fetch(`${API_BASE}/api/auth/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    try {
+      if (isLogin) {
+        const response = await backendApi.post('/api/auth/signin', {
           email: email.trim(),
           password,
           collegeCode,
           role
-        }),
-      });
+        });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Save session data
+        const data = response.data;
         localStorage.setItem('sessionToken', data.sessionToken);
         localStorage.setItem('selectedCollegeCode', collegeCode);
-        
-        // Use the context provided by useSessionManager or direct navigation
         navigate('/dashboard');
-      } else if (data.error === 'college_mismatch') {
+      }
+    } catch (error) {
+      const data = error.response?.data || {};
+      if (data.error === 'college_mismatch') {
         setUserCollege(data.userCollegeName);
         setShowCollegeMismatch(true);
       } else {
-        // Handle incorrect credentials
-        const errorMessage = data.error || 'Invalid email or password';
+        const errorMessage = data.error || error.message || 'Invalid email or password';
         triggerPopup(errorMessage, 'error');
       }
-    }
-  } catch (error) {
       console.error('Auth error:', error);
-      // triggers the global pill popup
-      triggerPopup(error.message || 'Server is not responding. Please check your connection.', 'error');
     } finally {
       setLoading(false);
     }
-};
+  };
 
   const handleForgotPassword = async () => {
     alert('Password reset functionality will be implemented with MongoDB backend in a future update.');
@@ -663,23 +599,14 @@ const LoginPage = () => {
     const handleDelete = async () => {
       setDeleteLoading(true);
       try {
-        const response = await fetch(`${API_BASE}/api/auth/delete-existing-account`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() })
-        });
+        await backendApi.post('/api/auth/delete-existing-account', { email: email.trim() });
 
-        if (response.ok) {
-          alert('Your existing account has been deleted. You can now register with this email.');
-          setShowExistingUserModal(false);
-          setEmailCheckStatus('');
-          setExistingUserCollege('');
-        } else {
-          const data = await response.json();
-          alert(data.error || 'Failed to delete account');
-        }
+        alert('Your existing account has been deleted. You can now register with this email.');
+        setShowExistingUserModal(false);
+        setEmailCheckStatus('');
+        setExistingUserCollege('');
       } catch (error) {
-        alert('Failed to delete account. Please try again.');
+        alert(error.response?.data?.error || 'Failed to delete account. Please try again.');
       }
       setDeleteLoading(false);
     };

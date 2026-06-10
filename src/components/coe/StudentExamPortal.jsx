@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { CheckCircle, AlertCircle, Download, FileText, DollarSign } from 'lucide-react';
 import { useSessionManager } from '../../hooks/useSessionManager';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const StudentExamPortal = () => {
   const { user, profile } = useSessionManager();
@@ -17,12 +16,12 @@ const StudentExamPortal = () => {
 
   const checkStatus = async () => {
     // 1. Get Active Session
-    const sessionRes = await axios.get(`${API_BASE}/api/coe/active-session`);
+    const sessionRes = await backendApi.get('/api/coe/active-session');
     setActiveSession(sessionRes.data);
 
     // 2. Check if already submitted
     if (user?._id) {
-       const formsRes = await axios.get(`${API_BASE}/api/coe/my-forms/${user._id}`);
+       const formsRes = await backendApi.get(`/api/coe/my-forms/${user._id}`);
        if (formsRes.data.length > 0) setSubmittedForm(formsRes.data[0]);
     }
   };
@@ -38,7 +37,7 @@ const StudentExamPortal = () => {
     ];
 
     try {
-        const res = await axios.post(`${API_BASE}/api/coe/submit-exam-form`, {
+        const res = await backendApi.post('/api/coe/submit-exam-form', {
             sessionId: activeSession._id,
             studentId: user._id,
             studentName: user.name,

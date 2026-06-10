@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import GlassHeader from '../../components/common/GlassHeader';
+import backendApi from '../../utils/backend-api';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
@@ -22,15 +23,17 @@ const NoticeCard = ({ notice, currentUser, currentRole, refresh }) => {
 
   const handleAction = async (action, data = {}) => {
     try {
-      const res = await fetch(`${API_BASE}/api/notices/${notice._id}/${action}`, {
-        method: action === 'comments' ? 'POST' : (action === 'react' ? 'PATCH' : 'DELETE'),
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (res.ok) refresh();
-    } catch (error) {
-      console.error(`Failed to ${action} notice`, error);
-    }
+      const url = `/api/notices/${notice._id}/${action}`;
+      if (action === 'comments') {
+        await backendApi.post(url, { text: commentText });
+        setCommentText("");
+      } else if (action === 'react') {
+        await backendApi.patch(url, {});
+      } else {
+        await backendApi.delete(url);
+      }
+      refresh();
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -207,25 +210,18 @@ const NoticeBoard = ({ type }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
 
   const fetchNotices = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/notices/${type}`, { 
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` } 
-      });
-      if (res.ok) setNotices(await res.json());
-    } catch (error) {
-      console.error("Error fetching notices:", error);
-    }
+      const res = await backendApi.get('/api/notices');
+      setNotices(res.data);
+    } catch (e) { console.error(e); }
     setLoading(false);
   };
 
   useEffect(() => {
     const init = async () => {
       try {
-        const res = await fetch(`${API_BASE}/session/info`, { 
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` } 
-        });
-        if (res.ok) setUser(await res.json());
+        const res = await backendApi.get('/session/info');
+        setUser(res.data);
         fetchNotices();
       } catch (error) {
         console.error("Session check failed", error);
@@ -234,30 +230,25 @@ const NoticeBoard = ({ type }) => {
     init();
   }, [type]);
 
-  const handlePost = async (e) => {
-    e.preventDefault();
-    const data = new FormData();
-    data.append('title', formData.title);
-    data.append('content', formData.content);
-    data.append('type', type);
-    data.append('videoConfig', formData.videoConfig);
-    selectedFiles.forEach(file => data.append('media', file));
+  const handlePost = async () => {
+    if (!formData.title || !formData.content) return alert("Title and Content required");
+    const formPayload = new FormData();
+    
+    Object.keys(formData).forEach(key => formPayload.append(key, formData[key]));
+    
+    // Append all selected files to the FormData
+    if (selectedFiles.length > 0) {
+      selectedFiles.forEach(f => formPayload.append('attachments', f)); // Assuming your backend expects 'attachments'
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/api/notices`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` },
-        body: data
-      });
-      if (res.ok) { 
-        setShowCreate(false); 
-        setFormData({title:"", content:"", department:"", videoConfig:"mini"}); 
-        setSelectedFiles([]); 
-        fetchNotices(); 
-      }
-    } catch (error) {
-      console.error("Error creating post:", error);
-    }
+      await backendApi.post('/api/notices', formPayload);
+      
+      setShowCreate(false);
+      setFormData({ title: '', content: '', priority: 'normal', department: '', videoConfig: 'mini' });
+      setSelectedFiles([]); // <-- FIXED: Clear the correct state array
+      fetchNotices();
+    } catch (e) { console.error(e); }
   };
 
   return (

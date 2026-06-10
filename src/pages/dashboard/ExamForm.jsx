@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -17,11 +16,11 @@ import GlassHeader from '../../components/common/GlassHeader';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import backendApi from '../../utils/backend-api';
 
 // Assets
 import LoadingGif from '../../utils/LoadingMan.gif';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // =========================================================
 // 1. SUB-COMPONENTS FOR FORM FILLING
@@ -266,14 +265,13 @@ const ExamForm = () => {
   const userRoleDisplay = profile?.role ? profile.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Student';
 
   // --- Data Fetching ---
+  // --- Data Fetching ---
   const fetchExamData = async () => {
     try {
-        const token = localStorage.getItem('sessionToken');
-        
         // Fetch both Eligibility (for active form) and My Forms (for history)
         const [eligRes, formsRes] = await Promise.all([
-            axios.get(`${API_BASE}/api/coe/student/eligibility/${user.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: { error: 'Failed to fetch eligibility' }})),
-            axios.get(`${API_BASE}/api/coe/my-forms/${user.id}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: [] }))
+            backendApi.get(`/api/coe/student/eligibility/${user.id}`).catch(() => ({ data: { error: 'Failed to fetch eligibility' }})),
+            backendApi.get(`/api/coe/my-forms/${user.id}`).catch(() => ({ data: [] }))
         ]);
 
         setApiData(eligRes.data);
@@ -306,8 +304,6 @@ const ExamForm = () => {
 
     setIsSubmitting(true);
     try {
-        const token = localStorage.getItem('sessionToken');
-        
         const uniqueBacklogSems = [...new Set(
             apiData.backlogSubjects.filter(b => selectedBacklogs.includes(b.id)).map(b => b.sem)
         )];
@@ -327,9 +323,7 @@ const ExamForm = () => {
             }
         };
 
-        await axios.post(`${API_BASE}/api/coe/student/submit-form`, payload, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        await backendApi.post('/api/coe/student/submit-form', payload);
 
         triggerPopup("Exam Form Successfully Filled & Completed!", "success");
         setView('dashboard');

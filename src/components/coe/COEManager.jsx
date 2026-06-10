@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, Wifi, ChevronRight, FileText, Trash2, Filter, Search, Download,
@@ -15,19 +14,17 @@ import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ModernPdfViewer from '../../components/ModernPDFViewer';
-// Add this line with your other imports
+import backendApi from '../../utils/backend-api';
 import { useErrorPopup } from '../../context/ErrorPopupContext';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 // ==========================================
 // 1. SUB-COMPONENTS (Feature Modules)
 // ==========================================
 
 // ==========================================
-// A. SESSION MANAGER (Matches Specific Design)
+// A. SESSION MANAGER (Admin Only)
 // ==========================================
-// --- A. SESSION MANAGER (Admin Only) ---
 const SessionManager = ({ isDarkMode }) => {
     const [view, setView] = useState('list'); // 'list' | 'create' | 'edit'
     const [sessions, setSessions] = useState([]);
@@ -49,8 +46,7 @@ const SessionManager = ({ isDarkMode }) => {
     const fetchSessions = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('sessionToken');
-            const res = await axios.get(`${API_BASE}/api/coe/sessions/all`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await backendApi.get('/api/coe/sessions/all');
             setSessions(res.data);
         } catch (e) { 
             console.error(e); 
@@ -77,8 +73,7 @@ const SessionManager = ({ isDarkMode }) => {
     const handleStatusChange = async (id, action) => {
         if (!confirm(`Are you sure you want to ${action} this session?`)) return;
         try {
-            const token = localStorage.getItem('sessionToken');
-            await axios.put(`${API_BASE}/api/coe/session/${id}`, { action }, { headers: { Authorization: `Bearer ${token}` } });
+            await backendApi.put(`/api/coe/session/${id}`, { action });
             
             triggerPopup(`Session ${action}d successfully`, "success"); // Success Toast
             fetchSessions();
@@ -100,14 +95,13 @@ const SessionManager = ({ isDarkMode }) => {
             fees: { regular: Number(formData.regularFee), backlogPerTerm: Number(formData.backlogFee) },
             isActive: true // Activate by default on create/update if intended
         };
-        const token = localStorage.getItem('sessionToken');
 
         try {
             if (view === 'edit') {
-                await axios.put(`${API_BASE}/api/coe/session/${editingId}`, { action: 'edit', updates: payload }, { headers: { Authorization: `Bearer ${token}` } });
+                await backendApi.put(`/api/coe/session/${editingId}`, { action: 'edit', updates: payload });
                 triggerPopup("Session Updated Successfully!", "success"); // Success Toast
             } else {
-                await axios.post(`${API_BASE}/api/coe/session`, payload, { headers: { Authorization: `Bearer ${token}` } });
+                await backendApi.post('/api/coe/session', payload);
                 triggerPopup("Session Created & Activated!", "success"); // Success Toast
             }
             
@@ -193,7 +187,7 @@ const SessionManager = ({ isDarkMode }) => {
             </div>
         )}
 
-        {/* VIEW 2: CREATE / EDIT FORM (Exact UI Match) */}
+        {/* VIEW 2: CREATE / EDIT FORM */}
         {view !== 'list' && (
             <div className="animate-fade-in-up">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -328,13 +322,9 @@ const MarksManager = ({ isDarkMode }) => (
     </div>
 );
 
-// ==========================================
-// REPLACE THE EXISTING SubjectAllocator COMPONENT
-// ==========================================
-
+// --- C. SUBJECT ALLOCATOR ---
 const SubjectAllocator = ({ isDarkMode }) => {
     // --- STATE ---
-    // Data
     const [departments, setDepartments] = useState([]);
     const [batches, setBatches] = useState([]);
     const [students, setStudents] = useState([]);
@@ -343,7 +333,7 @@ const SubjectAllocator = ({ isDarkMode }) => {
     // Selection & View State
     const [selectedDept, setSelectedDept] = useState('');
     const [selectedBatch, setSelectedBatch] = useState(null); // Stores full batch object
-    const [view, setView] = useState('list'); // 'list' (Batch View) or 'detail' (Student View)
+    const [view, setView] = useState('list'); // 'list' | 'detail'
     const [focusedStudent, setFocusedStudent] = useState(null);
     
     // Mappings
@@ -355,9 +345,8 @@ const SubjectAllocator = ({ isDarkMode }) => {
     // --- INITIAL DATA FETCHING ---
     useEffect(() => {
         const fetchDepts = async () => {
-            const token = localStorage.getItem('sessionToken');
             try {
-                const res = await axios.get(`${API_BASE}/api/departments`, { headers: { Authorization: `Bearer ${token}` } });
+                const res = await backendApi.get('/api/departments');
                 setDepartments(res.data);
             } catch (err) { console.error(err); }
         };
@@ -365,7 +354,6 @@ const SubjectAllocator = ({ isDarkMode }) => {
     }, []);
 
     // --- HANDLERS ---
-
     const handleDeptChange = async (deptId) => {
         setSelectedDept(deptId);
         setSelectedBatch(null);
@@ -375,13 +363,12 @@ const SubjectAllocator = ({ isDarkMode }) => {
         if (!deptId) return;
 
         try {
-            const token = localStorage.getItem('sessionToken');
             // 1. Fetch Subjects (All semesters)
-            const subRes = await axios.get(`${API_BASE}/api/departments/${deptId}/subjects`, { headers: { Authorization: `Bearer ${token}` } });
+            const subRes = await backendApi.get(`/api/departments/${deptId}/subjects`);
             setSubjects(subRes.data.filter(s => s.isActive));
 
             // 2. Fetch Batches (Filter Alumni)
-            const batchRes = await axios.get(`${API_BASE}/api/batches`, { headers: { Authorization: `Bearer ${token}` } });
+            const batchRes = await backendApi.get('/api/batches');
             setBatches(batchRes.data.filter(b => b.departmentId?._id === deptId && !b.isAlumni));
         } catch (err) { alert("Error loading data"); }
     };
@@ -394,8 +381,7 @@ const SubjectAllocator = ({ isDarkMode }) => {
 
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('sessionToken');
-            const res = await axios.get(`${API_BASE}/api/batches/${batchId}/students`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await backendApi.get(`/api/batches/${batchId}/students`);
             setStudents(res.data);
         } catch (err) { console.error(err); }
         setIsLoading(false);
@@ -407,8 +393,6 @@ const SubjectAllocator = ({ isDarkMode }) => {
         if (!window.confirm(`Assign these ${batchDefaultSubjects.length} subjects to ALL ${students.length} students in Sem ${selectedBatch.currentTerm}?`)) return;
 
         try {
-            const token = localStorage.getItem('sessionToken');
-            
             // Prepare payload: Create a mapping for every student in the batch
             const payload = students.map(s => ({
                 studentId: s._id,
@@ -416,10 +400,10 @@ const SubjectAllocator = ({ isDarkMode }) => {
                 semester: selectedBatch.currentTerm // Explicitly set to current term
             }));
 
-            await axios.post(`${API_BASE}/api/coe/allocation`, {
+            await backendApi.post('/api/coe/allocation', {
                 batchId: selectedBatch._id,
                 mappings: payload
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            });
 
             alert("Subjects assigned successfully!");
         } catch (err) { alert("Bulk assignment failed."); }
@@ -431,9 +415,8 @@ const SubjectAllocator = ({ isDarkMode }) => {
         setView('detail');
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('sessionToken');
             // Fetch this student's history
-            const res = await axios.get(`${API_BASE}/api/coe/allocation/student/${student._id}`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await backendApi.get(`/api/coe/allocation/student/${student._id}`);
             
             // Transform response: Backend returns { "1": [SubObj, SubObj] }, we need IDs for editing
             const formatted = {};
@@ -447,7 +430,6 @@ const SubjectAllocator = ({ isDarkMode }) => {
 
     const saveStudentMapping = async (semester) => {
         try {
-            const token = localStorage.getItem('sessionToken');
             // Wrap in array as API expects bulk format
             const payload = [{
                 studentId: focusedStudent._id,
@@ -455,10 +437,7 @@ const SubjectAllocator = ({ isDarkMode }) => {
                 semester: parseInt(semester)
             }];
 
-            await axios.post(`${API_BASE}/api/coe/allocation`, {
-                batchId: selectedBatch._id,
-                mappings: payload
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            await backendApi.post('/api/coe/allocation', { batchId: selectedBatch._id, mappings: payload });
 
             alert(`Saved changes for Sem ${semester}`);
         } catch(e) { alert("Save failed"); }
@@ -478,7 +457,6 @@ const SubjectAllocator = ({ isDarkMode }) => {
     const getTermLabel = (term) => {
         if (!selectedBatch || !selectedDept) return `Sem ${term}`;
         
-        // Find department and stream to check curriculum type
         const dept = departments.find(d => d._id === selectedDept);
         const stream = dept?.streams?.find(s => s.code === selectedBatch.streamCode);
         
@@ -529,7 +507,6 @@ const SubjectAllocator = ({ isDarkMode }) => {
                         >
                             <option value="">Select Batch</option>
                             {batches.map(b => {
-                                // Dynamic Lookup for Dropdown Options
                                 const dept = departments.find(d => d._id === selectedDept);
                                 const stream = dept?.streams?.find(s => s.code === b.streamCode);
                                 const type = stream?.curriculumType === 'Trimester' ? 'Trim' : 'Sem';
@@ -697,13 +674,13 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
     const [selectedBatch, setSelectedBatch] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
 
-    // Form State (Hybrid of Auto-filled and Manual)
+    // Form State
     const [formData, setFormData] = useState({
         instituteName: profile?.college || 'INSTITUTE OF ENGINEERING & MANAGEMENT',
         location: 'SALT LAKE',
         affiliation: 'Affiliated to UEM Kolkata and Approved by AICTE',
-        degreeName: 'B.Tech', // Explicit Degree Input
-        sessionInfo: 'Loading Session...', // Cycle / Session Name
+        degreeName: 'B.Tech',
+        sessionInfo: 'Loading Session...',
         roomNo: '',
         date: new Date().toISOString().split('T')[0],
         time: '10:00 AM - 01:00 PM',
@@ -718,13 +695,10 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const token = localStorage.getItem('sessionToken');
-                const headers = { Authorization: `Bearer ${token}` };
-
                 const [deptRes, batchRes, sessionRes] = await Promise.all([
-                    axios.get(`${API_BASE}/api/departments`, { headers }),
-                    axios.get(`${API_BASE}/api/batches`, { headers }),
-                    axios.get(`${API_BASE}/api/coe/active-session`, { headers }).catch(() => ({ data: null }))
+                    backendApi.get('/api/departments'),
+                    backendApi.get('/api/batches'),
+                    backendApi.get('/api/coe/active-session').catch(() => ({ data: null }))
                 ]);
 
                 setDepartments(deptRes.data);
@@ -756,11 +730,7 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
         setFormData(prev => ({ ...prev, batch: `${batch.batchName} (Term ${batch.currentTerm})` }));
 
         try {
-            const token = localStorage.getItem('sessionToken');
-            const headers = { Authorization: `Bearer ${token}` };
-            
-            // Fetch Students in this Batch
-            const studentRes = await axios.get(`${API_BASE}/api/batches/${batchId}/students`, { headers });
+            const studentRes = await backendApi.get(`/api/batches/${batchId}/students`);
             const studentList = studentRes.data || [];
             
             const sortedStudents = studentList.sort((a, b) => {
@@ -783,8 +753,7 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                 setFormData(prev => ({ ...prev, rollRange: '', studentCount: 30 }));
             }
 
-            // Fetch Subjects
-            const subRes = await axios.get(`${API_BASE}/api/departments/${selectedDept}/subjects`, { headers });
+            const subRes = await backendApi.get(`/api/departments/${selectedDept}/subjects`);
             const termSubjects = subRes.data.filter(s => s.semester === batch.currentTerm && s.isActive);
             setSubjects(termSubjects);
 
@@ -838,7 +807,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
                 {/* LEFT COLUMN */}
                 <div className="space-y-8">
                     {/* Section 1: Dynamic Academic Selection */}
@@ -959,7 +927,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                                 <input className={`w-full p-3 rounded-xl border outline-none text-sm ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`} value={formData.invigilators} onChange={e => setFormData({...formData, invigilators: e.target.value})} placeholder="e.g. DKD, ARG, SH"/>
                             </div>
                             
-                            {/* Editable Overrides for Empty Arrays */}
                             <div>
                                 <label className={`block text-xs font-bold mb-1 ml-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Roll Range (Editable)</label>
                                 <input className={`w-full p-3 rounded-xl border outline-none text-sm font-mono ${isDarkMode ? 'bg-gray-900 border-gray-700 text-gray-300' : 'bg-white border-gray-300 text-gray-700'}`} value={formData.rollRange} onChange={e => setFormData({...formData, rollRange: e.target.value})} placeholder="1001 - 1050"/>
@@ -973,7 +940,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                 </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="mt-8 flex flex-col md:flex-row gap-4 justify-end">
                 <button 
                     disabled={!selectedSubject || !formData.roomNo}
@@ -993,17 +959,11 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
         </div>
     );
 
-    // ==========================================
-    // RENDER: PRINTABLE PREVIEW (Overlay)
-    // ==========================================
-    
-    // Resolve Stream Name
     const resolvedStreamName = selectedStream ? departments.find(d => d._id === selectedDept)?.streams.find(s => s.code === selectedStream)?.name : '';
 
     return (
         <div className="fixed inset-0 z-[100] bg-gray-900 overflow-y-auto print:bg-white print:static print:z-auto flex flex-col animate-fade-in">
-            
-            {/* Sticky Control Bar (Hidden during print) */}
+            {/* Sticky Control Bar */}
             <div className="sticky top-0 z-50 bg-gray-800 border-b border-gray-700 p-4 px-8 flex justify-between items-center print:hidden shadow-lg">
                 <div className="text-white font-bold flex items-center gap-2 opacity-80">
                     <Printer className="w-5 h-5"/> Print Preview Mode
@@ -1020,10 +980,8 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
 
             {/* Document Canvas Area */}
             <div className="flex-1 p-8 print:p-0 flex justify-center items-start">
-                {/* The actual A4 Sheet */}
                 <div className="bg-white text-black w-full max-w-[210mm] min-h-[297mm] p-[15mm] shadow-2xl print:shadow-none print:p-0 relative">
                     
-                    {/* --- HEADER AS PER TEMPLATE --- */}
                     <div className="text-center mb-6">
                         <h1 className="text-3xl font-extrabold tracking-wide uppercase">{formData.instituteName}, {formData.location}</h1>
                         <p className="text-sm font-semibold mt-1">{formData.affiliation}</p>
@@ -1034,7 +992,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                         </h3>
                     </div>
 
-                    {/* --- METADATA TABLE --- */}
                     <table className="w-full border-collapse border border-gray-800 mb-8 text-sm">
                         <tbody>
                             <tr className="border-b border-gray-800">
@@ -1076,7 +1033,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                         </tbody>
                     </table>
 
-                    {/* --- ATTENDANCE/DUTY GRID --- */}
                     {view === 'preview_student' ? (
                         <table className="w-full border-collapse border border-gray-800">
                             <thead>
@@ -1102,7 +1058,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {/* Render rows for assigned invigilators */}
                                 {formData.invigilators ? formData.invigilators.split(',').map((invig, idx) => (
                                     <tr key={idx} className="border-b border-gray-400">
                                         <td className="border-r border-gray-400 p-4 font-bold">{invig.trim()}</td>
@@ -1120,7 +1075,6 @@ const LogisticsManager = ({ isDarkMode, profile }) => {
                         </table>
                     )}
 
-                    {/* --- FOOTER SIGNATURES --- */}
                     <div className="absolute bottom-12 left-[15mm] right-[15mm] flex justify-between items-end pt-12">
                         <div className="w-64 text-center">
                             <div className="border-b border-black mb-2"></div>
@@ -1146,8 +1100,7 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
       if (data.departments.length > 0) return;
       const fetchDepts = async () => {
         try {
-           const token = localStorage.getItem('sessionToken');
-           const res = await axios.get(`${API_BASE}/api/departments`, { headers: { Authorization: `Bearer ${token}` } });
+           const res = await backendApi.get('/api/departments');
            setData(prev => ({ ...prev, departments: res.data }));
         } catch (err) { console.error(err); }
       };
@@ -1158,8 +1111,7 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
         setData(prev => ({ ...prev, filters: { ...prev.filters, dept: deptId, subject: '' }, subjects: [] }));
         if (!deptId) return;
         try {
-          const token = localStorage.getItem('sessionToken');
-          const res = await axios.get(`${API_BASE}/api/departments/${deptId}/subjects`, { headers: { Authorization: `Bearer ${token}` } });
+          const res = await backendApi.get(`/api/departments/${deptId}/subjects`);
           setData(prev => ({ ...prev, subjects: res.data }));
         } catch (err) { console.error(err); }
     };
@@ -1168,19 +1120,16 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
       if (!data.filters.subject) return alert("Please select a Subject first.");
       setData(prev => ({ ...prev, isLoading: true }));
       try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await axios.get(`${API_BASE}/api/coe/questions`, {
-          params: { tenantId: user?.tenantId || profile?.tenantId, subjectId: data.filters.subject, year: data.filters.year },
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await backendApi.get('/api/coe/questions', {
+          params: { tenantId: user?.tenantId || profile?.tenantId, subjectId: data.filters.subject, year: data.filters.year }
         });
         setData(prev => ({ ...prev, files: res.data, isLoading: false, hasFetched: true }));
       } catch (err) { alert("Failed to fetch questions"); setData(prev => ({ ...prev, isLoading: false })); }
     };
 
     const handleFileAction = (file) => {
-    // This removes the backend API and ensures there is a starting slash
-    const fileUrl = file.fileUrl.startsWith('/') ? file.fileUrl : `/${file.fileUrl}`;
-    const isPdf = file.fileUrl.toLowerCase().endsWith('.pdf');
+        const fileUrl = file.fileUrl.startsWith('/') ? file.fileUrl : `/${file.fileUrl}`;
+        const isPdf = file.fileUrl.toLowerCase().endsWith('.pdf');
         if (isPdf) setPdfViewer({ isOpen: true, url: fileUrl, title: file.title || file.subjectName });
         else {
             const link = document.createElement('a');
@@ -1191,13 +1140,14 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
 
     const handleDelete = async (id) => {
         if(!window.confirm("Are you sure?")) return;
-        try { await axios.delete(`${API_BASE}/api/coe/question/${id}`); setData(prev => ({...prev, files: prev.files.filter(f => f._id !== id)})); } 
-        catch(e) { alert("Delete failed"); }
-    }
+        try { 
+            await backendApi.delete(`/api/coe/question/${id}`); 
+            setData(prev => ({...prev, files: prev.files.filter(f => f._id !== id)})); 
+        } catch(e) { alert("Delete failed"); }
+    };
 
     return (
       <div className="flex flex-col gap-8 animate-fade-in">
-        {/* Header Card */}
         <div className={`p-8 rounded-3xl border shadow-sm relative overflow-hidden transition-all ${isDarkMode ? 'bg-gray-800/80 border-gray-700' : 'bg-white border-gray-200 shadow-gray-200/50'}`}>
             <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none ${isDarkMode ? 'bg-blue-500/10' : 'bg-blue-500/5'}`}></div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
@@ -1218,7 +1168,6 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
             </div>
         </div>
 
-        {/* Filter Bar */}
         <div className={`p-8 rounded-3xl shadow-sm border transition-all ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-gray-200/50'}`}>
              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
                 <div className="md:col-span-4">
@@ -1253,11 +1202,10 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
              </div>
         </div>
 
-        {/* Real-time Search & Grid */}
         {data.files.length > 0 && (
             <div className="flex justify-between items-center px-2 animate-fade-in">
                 <h3 className={`font-bold text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>Repository Files</h3>
-                <div className={`relative group w-full max-w-sm`}>
+                <div className="relative group w-full max-w-sm">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none opacity-50"><Search className="h-5 w-5" /></div>
                     <input type="text" className={`block w-full pl-11 pr-4 py-3 rounded-xl font-medium outline-none ${isDarkMode ? 'bg-gray-800 text-white border border-gray-700' : 'bg-white text-gray-900 border border-gray-200'}`} placeholder="Search title, ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}/>
                 </div>
@@ -1312,28 +1260,23 @@ const QuestionBankManager = ({ data, setData, setPdfViewer, isDarkMode, user, pr
 // ==========================================
 // 2. MAIN PARENT COMPONENT
 // ==========================================
-
 const COEManager = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const { user, profile } = useSessionManager();
   
-  // -- ROLE LOGIC --
   const userRoleDisplay = profile?.role ? profile.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'User';
   const isFaculty = profile?.role === 'faculty';
 
-  // -- STATE --
-  // **MODIFICATION 1: Default to 'allocation' for Faculty**
   const [activeModule, setActiveModule] = useState(isFaculty ? 'allocation' : 'session'); 
 
   const [qbData, setQbData] = useState({ departments: [], subjects: [], files: [], filters: { dept: '', subject: '', year: new Date().getFullYear() }, isLoading: false, hasFetched: false });
   const [pdfViewer, setPdfViewer] = useState({ isOpen: false, url: null, title: '' });
 
-  // -- MENU CONFIGURATION --
   const allMenuItems = [
-    { id: 'session', label: 'Exam Session', icon: <Calendar className="w-5 h-5"/>, desc: 'Manage Terms', restricted: true }, // Admin Only
+    { id: 'session', label: 'Exam Session', icon: <Calendar className="w-5 h-5"/>, desc: 'Manage Terms', restricted: true },
     { id: 'allocation', label: 'Subject Mapping', icon: <Users className="w-5 h-5"/>, desc: 'Assign Electives', restricted: false },
-    { id: 'logistics', label: 'Logistics', icon: <ClipboardList className="w-5 h-5"/>, desc: 'Rooms & Attendance', restricted: true }, // Admin Only
+    { id: 'logistics', label: 'Logistics', icon: <ClipboardList className="w-5 h-5"/>, desc: 'Rooms & Attendance', restricted: true },
     { id: 'marks', label: 'Marks Entry', icon: <PenTool className="w-5 h-5"/>, desc: 'Scoring & Results', restricted: false },
     { id: 'qb', label: 'Question Bank', icon: <BookOpen className="w-5 h-5"/>, desc: 'Repository', restricted: false },
   ];
@@ -1361,7 +1304,6 @@ const COEManager = () => {
                 <span className="text-blue-600">COE Management</span>
               </div>
               <div className="flex items-center space-x-2 mt-0.5">
-                {/* **MODIFICATION 2: Showing Institute Name instead of User Role** */}
                 <span className={`text-xs font-medium px-2 py-0.5 rounded ${isDarkMode ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
                   {profile?.college || 'My Institute'}
                 </span>

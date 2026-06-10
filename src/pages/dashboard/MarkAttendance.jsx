@@ -16,8 +16,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import AttendanceToggle from '../../components/common/AttendanceToggle'; // Importing the new toggle
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; 
+import backendApi from '../../utils/backend-api'; 
 
 const MarkAttendance = () => {
   const navigate = useNavigate();
@@ -69,43 +68,40 @@ const MarkAttendance = () => {
   const refreshData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('sessionToken');
-      const headers = { 'Authorization': `Bearer ${token}` };
+      const [batchRes, deptRes] = await Promise.all([
+          backendApi.get('/api/batches'),
+          backendApi.get('/api/departments')
+      ]);
 
-      const batchRes = await fetch(`${API_BASE}/api/batches`, { headers });
-      const deptRes = await fetch(`${API_BASE}/api/departments`, { headers });
+      const batchData = batchRes.data;
+      const deptData = deptRes.data;
+      
+      const formattedBatches = batchData.map(b => {
+          const dept = deptData.find(d => d._id === (b.departmentId?._id || b.departmentId));
+          const streamConfig = dept?.streams?.find(s => s.code === b.streamCode);
+          const curriculumType = streamConfig?.curriculumType || 'Semester';
+          const termLabel = `${curriculumType} ${b.currentTerm}`;
 
-      if (batchRes.ok && deptRes.ok) {
-          const batchData = await batchRes.json();
-          const deptData = await deptRes.json();
-          
-          const formattedBatches = batchData.map(b => {
-              const dept = deptData.find(d => d._id === (b.departmentId?._id || b.departmentId));
-              const streamConfig = dept?.streams?.find(s => s.code === b.streamCode);
-              const curriculumType = streamConfig?.curriculumType || 'Semester';
-              const termLabel = `${curriculumType} ${b.currentTerm}`;
+          return {
+              _id: b._id,
+              displayName: b.batchName || `${b.admissionYear} - ${b.streamCode}`, 
+              section: b.section,
+              deptName: b.departmentId?.name || 'General',
+              deptId: b.departmentId?._id,
+              studentCount: b.students?.length || 0,
+              currentTerm: b.currentTerm,
+              admissionYear: b.admissionYear,
+              admissionMonth: b.admissionMonth,
+              streamCode: b.streamCode,
+              isAlumni: b.isAlumni,
+              streamName: streamConfig?.name || b.streamCode,
+              curriculumType: curriculumType,
+              termLabel: termLabel
+          };
+      });
 
-              return {
-                  _id: b._id,
-                  displayName: b.batchName || `${b.admissionYear} - ${b.streamCode}`, 
-                  section: b.section,
-                  deptName: b.departmentId?.name || 'General',
-                  deptId: b.departmentId?._id,
-                  studentCount: b.students?.length || 0,
-                  currentTerm: b.currentTerm,
-                  admissionYear: b.admissionYear,
-                  admissionMonth: b.admissionMonth,
-                  streamCode: b.streamCode,
-                  isAlumni: b.isAlumni,
-                  streamName: streamConfig?.name || b.streamCode,
-                  curriculumType: curriculumType,
-                  termLabel: termLabel
-              };
-          });
-
-          setAllBatches(formattedBatches);
-          setDepartments(deptData);
-      }
+      setAllBatches(formattedBatches);
+      setDepartments(deptData);
     } catch (error) { console.error("Network error", error); }
     setLoading(false);
   };
@@ -125,19 +121,15 @@ const MarkAttendance = () => {
     if (!batchId) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('sessionToken');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      
       const dateObj = new Date(dateString);
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const dayName = days[dateObj.getDay()];
       setCurrentDayName(dayName);
 
-      const routineRes = await fetch(`${API_BASE}/api/routine/batch/${batchId}`, { headers });
-      const studentsRes = await fetch(`${API_BASE}/api/batches/${batchId}/students`, { headers });
-
-      if (routineRes.ok) {
-        const routines = await routineRes.json();
+      // Fetch Routine
+      try {
+        const routineRes = await backendApi.get(`/api/routine/batch/${batchId}`);
+        const routines = routineRes.data;
         const todayRoutine = routines.find(r => r.dayOfWeek === dayName);
         const validPeriods = todayRoutine?.periods?.filter(p => !p.isBreak && p.subject) || [];
         
@@ -150,11 +142,13 @@ const MarkAttendance = () => {
             facultyId: { name: p.facultyName || 'Faculty' } 
         }));
         setSchedule(formattedSchedule);
-      } else { setSchedule([]); }
+      } catch (e) { setSchedule([]); }
 
-      if (studentsRes.ok) {
-        setStudents(await studentsRes.json());
-      } else { setStudents([]); }
+      // Fetch Students
+      try {
+        const studentsRes = await backendApi.get(`/api/batches/${batchId}/students`);
+        setStudents(studentsRes.data);
+      } catch (e) { setStudents([]); }
 
     } catch (error) { console.error(error); }
     setLoading(false);
@@ -203,18 +197,10 @@ const MarkAttendance = () => {
             }))
         };
 
-        const res = await fetch(`${API_BASE}/api/attendance/mark`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) { 
-            alert("Attendance Synced! 🚀"); 
-            setStep(2); 
-        } else {
-            alert("Failed to sync.");
-        }
-    } catch (error) { alert("Network error occurred."); }
+        await backendApi.post('/api/attendance/mark', payload);
+        alert("Attendance Synced! 🚀"); 
+        setStep(2); 
+    } catch (error) { alert(error.response?.data?.error || "Network error occurred."); }
     setLoading(false);
   };
 
@@ -228,53 +214,46 @@ const MarkAttendance = () => {
     setLoading(true);
     try {
       // Fetch raw attendance data from backend
-      const res = await fetch(`${API_BASE}/api/attendance/report?batchId=${selectedBatch._id}&startDate=${startDate}&endDate=${endDate}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
+      const res = await backendApi.get(`/api/attendance/report?batchId=${selectedBatch._id}&startDate=${startDate}&endDate=${endDate}`);
+      const data = res.data; // Expected: [{ username, name, presentCount }]
+
+      // 1. Calculate the Benchmark (Top Student)
+      const maxAttendance = Math.max(...data.map(s => s.presentCount));
+
+      // 2. Generate PDF
+      const doc = new jsPDF();
       
-      if(res.ok) {
-        const data = await res.json(); // Expected: [{ username, name, presentCount }]
+      // Header
+      doc.setFontSize(18);
+      doc.text(`Attendance Report: ${selectedBatch.displayName}`, 14, 15);
+      doc.setFontSize(11);
+      doc.text(`Duration: ${startDate} to ${endDate}`, 14, 22);
+      doc.setTextColor(100);
+      doc.text(`Benchmark (Top Attendance): ${maxAttendance} Periods = 100%`, 14, 28);
 
-        // 1. Calculate the Benchmark (Top Student)
-        const maxAttendance = Math.max(...data.map(s => s.presentCount));
+      // Table Data Preparation with Relative Calculation
+      const tableBody = data.map(student => {
+        const percentage = maxAttendance === 0 ? 0 : ((student.presentCount / maxAttendance) * 100).toFixed(1);
+        return [
+          student.username, // Noteloom ID
+          student.name,
+          student.presentCount,
+          `${percentage}%` // Relative %
+        ];
+      });
 
-        // 2. Generate PDF
-        const doc = new jsPDF();
-        
-        // Header
-        doc.setFontSize(18);
-        doc.text(`Attendance Report: ${selectedBatch.displayName}`, 14, 15);
-        doc.setFontSize(11);
-        doc.text(`Duration: ${startDate} to ${endDate}`, 14, 22);
-        doc.setTextColor(100);
-        doc.text(`Benchmark (Top Attendance): ${maxAttendance} Periods = 100%`, 14, 28);
+      doc.autoTable({
+        startY: 35,
+        head: [['ID', 'Name', 'Periods Attended', 'Relative %']],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { fillColor: [59, 130, 246] }, // Blue header
+      });
 
-        // Table Data Preparation with Relative Calculation
-        const tableBody = data.map(student => {
-          const percentage = maxAttendance === 0 ? 0 : ((student.presentCount / maxAttendance) * 100).toFixed(1);
-          return [
-            student.username, // Noteloom ID
-            student.name,
-            student.presentCount,
-            `${percentage}%` // Relative %
-          ];
-        });
-
-        doc.autoTable({
-          startY: 35,
-          head: [['ID', 'Name', 'Periods Attended', 'Relative %']],
-          body: tableBody,
-          theme: 'grid',
-          headStyles: { fillColor: [59, 130, 246] }, // Blue header
-        });
-
-        doc.save(`Report_${selectedBatch.displayName}_${startDate}.pdf`);
-      } else {
-        alert("Failed to fetch report data.");
-      }
+      doc.save(`Report_${selectedBatch.displayName}_${startDate}.pdf`);
     } catch (error) {
       console.error(error);
-      alert("Error generating report.");
+      alert(error.response?.data?.error || "Error generating report.");
     }
     setLoading(false);
   };
@@ -295,11 +274,8 @@ const MarkAttendance = () => {
   // --- 5. BATCH CRUD OPERATIONS ---
   const handleCreateBatch = async (e) => {
     e.preventDefault();
-    // Use MarkAttendance's loading state
     setActionLoading(true);
-    
     try {
-      // Logic: Slice the sections array based on count if enabled
       const sections = createForm.hasSections 
         ? createForm.sectionNames.slice(0, createForm.sectionCount) 
         : ["N/A"];
@@ -313,26 +289,12 @@ const MarkAttendance = () => {
         sections: sections
       };
 
-      const res = await fetch(`${API_BASE}/api/batches`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        alert("Class Created Successfully!");
-        setShowCreateModal(false);
-        refreshData(); 
-        // Reset form
-        setCreateForm(prev => ({ ...prev, batchName: '', hasSections: false, sectionCount: 1 }));
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to create class");
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Error creating batch");
-    }
+      await backendApi.post('/api/batches', payload);
+      alert("Class Created Successfully!");
+      setShowCreateModal(false);
+      refreshData(); 
+      setCreateForm(prev => ({ ...prev, batchName: '', hasSections: false, sectionCount: 1 }));
+    } catch (e) { alert(e.response?.data?.error || "Error creating batch"); }
     setActionLoading(false);
   };
 
@@ -340,40 +302,22 @@ const MarkAttendance = () => {
     e.preventDefault();
     if (!editForm._id) return;
     setActionLoading(true);
-    
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${editForm._id}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm)
-      });
-
-      if (res.ok) {
-        alert("Batch Updated!");
-        setShowEditModal(false);
-        refreshData();
-      } else {
-        alert("Failed to update");
-      }
-    } catch (e) {
-      alert("Error updating batch");
-    }
+      await backendApi.put(`/api/batches/${editForm._id}`, editForm);
+      alert("Batch Updated!");
+      setShowEditModal(false);
+      refreshData();
+    } catch (e) { alert(e.response?.data?.error || "Error updating batch"); }
     setActionLoading(false);
   };
 
   const handleDeleteBatch = async (e, batchId) => {
     e.stopPropagation(); 
     if (!window.confirm("Are you sure you want to delete this batch?")) return;
-    
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${batchId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) refreshData();
-    } catch (error) {
-      console.error(error);
-    }
+      await backendApi.delete(`/api/batches/${batchId}`);
+      refreshData();
+    } catch (error) { console.error(error); }
   };
 
   const openEditModal = (e, batch) => {
@@ -394,10 +338,8 @@ const MarkAttendance = () => {
     setManagingBatch(batch);
     setBatchStudents([]);
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${batch._id}/students`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) setBatchStudents(await res.json());
+      const res = await backendApi.get(`/api/batches/${batch._id}/students`);
+      setBatchStudents(res.data);
     } catch (e) { console.error(e); }
   };
 
@@ -405,35 +347,20 @@ const MarkAttendance = () => {
     if (!newStudentId.trim()) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${managingBatch._id}/enroll`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ noteloomId: newStudentId })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setBatchStudents([...batchStudents, data.student]);
-        setNewStudentId("");
-        // Optimistically update count
-        setAllBatches(prev => prev.map(b => b._id === managingBatch._id ? {...b, studentCount: b.studentCount + 1} : b));
-      } else {
-        alert(data.error);
-      }
-    } catch (e) { console.error(e); }
+      const res = await backendApi.post(`/api/batches/${managingBatch._id}/enroll`, { noteloomId: newStudentId });
+      setBatchStudents([...batchStudents, res.data.student]);
+      setNewStudentId("");
+      setAllBatches(prev => prev.map(b => b._id === managingBatch._id ? {...b, studentCount: b.studentCount + 1} : b));
+    } catch (e) { alert(e.response?.data?.error || "Failed to enroll student"); }
     setActionLoading(false);
   };
 
   const handleUnenrollStudent = async (studentId) => {
     if (!window.confirm("Remove student from this class?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${managingBatch._id}/students/${studentId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) {
-        setBatchStudents(batchStudents.filter(s => s._id !== studentId));
-        setAllBatches(prev => prev.map(b => b._id === managingBatch._id ? {...b, studentCount: b.studentCount - 1} : b));
-      }
+      await backendApi.delete(`/api/batches/${managingBatch._id}/students/${studentId}`);
+      setBatchStudents(batchStudents.filter(s => s._id !== studentId));
+      setAllBatches(prev => prev.map(b => b._id === managingBatch._id ? {...b, studentCount: b.studentCount - 1} : b));
     } catch (e) { console.error(e); }
   };
 

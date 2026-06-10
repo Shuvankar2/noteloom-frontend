@@ -8,7 +8,7 @@ import Footer from "../../components/common/Footer";
 import LogoWithFallback from "../../components/common/LogoWithFallback"; 
 
 // Define API_BASE (Ensure this matches your backend URL)
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const CollegeSelection = ({ navigate }) => {
   const { isDarkMode } = useTheme();
@@ -24,28 +24,23 @@ useEffect(() => {
   try {
     setLoading(true);
     // Fetches from the dedicated public endpoint
-    const response = await fetch(`${API_BASE}/it-auth/public/colleges`);
-    
-    if (response.ok) {
-      const data = await response.json();
+    const response = await backendApi.get('/it-auth/public/colleges');
+    const data = response.data;
       
-      // Map backend Tenant fields to your Card component requirements
-      const formattedData = data.map(college => ({
-        _id: college._id,
-        name: college.name,
-        // PRIORITY: Use the saved location from DB; fallback only if empty
-        location: college.location || "Location Not Set", 
-        category: college.category || (college.type === 'college' ? 'Engineering' : 'University'),
-        collegeCode: college.collegeCode || "0000",
-        logoUrl: college.logoUrl || "/webdata/clg-logo/Note-Loom.svg",
-        // Strictly check for true to ensure the star badge persists
-        featured: college.featured === true 
-      }));
+    // Map backend Tenant fields to your Card component requirements
+    const formattedData = data.map(college => ({
+      _id: college._id,
+      name: college.name,
+      // PRIORITY: Use the saved location from DB; fallback only if empty
+      location: college.location || "Location Not Set", 
+      category: college.category || (college.type === 'college' ? 'Engineering' : 'University'),
+      collegeCode: college.collegeCode || "0000",
+      logoUrl: college.logoUrl || "/webdata/clg-logo/Note-Loom.svg",
+      // Strictly check for true to ensure the star badge persists
+      featured: college.featured === true 
+    }));
       
-      setColleges(formattedData); 
-    } else {
-      console.error("Backend error:", response.status);
-    }
+    setColleges(formattedData); 
   } catch (error) {
     console.error("Error fetching colleges:", error);
   } finally {

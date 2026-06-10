@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, AlertCircle, Edit, Trash2 } from "lucide-react";
 import { useTheme } from '../../context/ThemeContext';
 import GlassHeader from '../../components/common/GlassHeader';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const UserManagementCard = ({ user, onToggle, onDelete }) => {
   const { isDarkMode } = useTheme();
@@ -59,11 +58,9 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/college-admin/users/${activeTab}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) setUsers(await res.json());
-    } catch (err) { console.error(err); }
+      const res = await backendApi.get(`/api/college-admin/users/${activeTab}`);
+      setUsers(res.data);
+    } catch (err) { console.error("Error fetching users:", err); }
     setLoading(false);
   };
 
@@ -71,21 +68,18 @@ const ManageUsers = () => {
 
   const handleStatusToggle = async (userId, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-    const res = await fetch(`${API_BASE}/api/college-admin/users/${userId}/status`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    });
-    if (res.ok) fetchUsers();
+    try {
+      await backendApi.patch(`/api/college-admin/users/${userId}/status`, { status: newStatus });
+      fetchUsers();
+    } catch (err) { console.error("Error toggling status:", err); }
   };
 
   const handleDelete = async (userId) => {
     if (!confirm("Schedule for deletion in 30 days?")) return;
-    const res = await fetch(`${API_BASE}/api/college-admin/users/${userId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    if (res.ok) fetchUsers();
+    try {
+      await backendApi.delete(`/api/college-admin/users/${userId}`);
+      fetchUsers();
+    } catch (err) { console.error("Error deleting user:", err); }
   };
 
   const filteredUsers = users.filter(u => {

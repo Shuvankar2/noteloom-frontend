@@ -10,7 +10,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
 // Define API_BASE or import it from your config
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const AddEditContentPage = () => {
   const { isDarkMode } = useTheme();
@@ -83,33 +83,30 @@ const AddEditContentPage = () => {
     
     try {
       const url = editingContent 
-        ? `${API_BASE}/it-admin/individual-content/${editingContent._id}`
-        : `${API_BASE}/it-admin/individual-content`;
+        ? `/it-admin/individual-content/${editingContent._id}`
+        : `/it-admin/individual-content`;
       
       const dataToSave = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
       };
+
+      // Use PUT for edits, POST for new creations
+      const method = editingContent ? 'put' : 'post';
       
-      const response = await fetch(url, {
-        method: editingContent ? 'PUT' : 'POST',
+      await backendApi[method](url, dataToSave, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSave),
+          // Explicitly pass the IT token to override the default user sessionToken
+          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`
+        }
       });
       
-      if (response.ok) {
-        alert(`Content ${editingContent ? 'updated' : 'created'} successfully!`);
-        navigate('/it-admin');
-      } else {
-        const data = await response.json();
-        alert(data.error || 'Error saving content');
-      }
+      alert(`Content ${editingContent ? 'updated' : 'created'} successfully!`);
+      navigate('/it-admin');
     } catch (error) {
       console.error('Error saving content:', error);
-      alert('Error saving content');
+      // Grab the error message directly from the Axios error response
+      alert(error.response?.data?.error || 'Error saving content');
     } finally {
       setLoading(false);
     }

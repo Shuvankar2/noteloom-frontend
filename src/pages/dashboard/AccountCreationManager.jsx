@@ -4,9 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import GlassHeader from '../../components/common/GlassHeader';
-
-// Define API_BASE or import it from your config
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const AccountCreationManager = () => {
   const { isDarkMode } = useTheme();
@@ -69,20 +67,22 @@ const AccountCreationManager = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/role-signup`, {
-        method: 'POST',
-        body: data
+      // Pass the FormData object directly to Axios
+      const res = await backendApi.post('/api/auth/role-signup', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const result = await res.json();
-      if (res.ok) {
-        setMessage({ type: 'success', text: `Account created! UID: ${result.uid}` });
-        // Reset form
-        setFormData({ ...formData, fullName: '', email: '', password: '', rollNo: '', employeeId: '', profilePicture: null, profilePicturePreview: '' });
-      } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to create account' });
-      }
+      
+      const result = res.data;
+      
+      setMessage({ type: 'success', text: `Account created! UID: ${result.uid}` });
+      // Reset form
+      setFormData({ ...formData, fullName: '', email: '', password: '', rollNo: '', employeeId: '', profilePicture: null, profilePicturePreview: '' });
+      
     } catch (err) {
-      setMessage({ type: 'error', text: 'Server error' });
+      setMessage({ 
+        type: 'error', 
+        text: err.response?.data?.error || 'Failed to create account' 
+      });
     } finally {
       setLoading(false);
     }

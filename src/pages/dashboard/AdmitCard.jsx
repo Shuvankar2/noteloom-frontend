@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import backendApi from '../../utils/backend-api';
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, Lock, FileText, CheckCircle2, AlertCircle, 
@@ -19,7 +19,6 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 // Assets
 import LoadingGif from '../../utils/LoadingMan.gif';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 /* =========================================================================
    1. SUB-COMPONENTS (Printable Views)
@@ -233,11 +232,9 @@ const AdmitCard = () => {
       if (!user) return;
       try {
         setLoading(true);
-        const token = localStorage.getItem('sessionToken');
-        const headers = { Authorization: `Bearer ${token}` };
 
         // 1. Fetch Candidate Forms (History)
-        const formsRes = await axios.get(`${API_BASE}/api/coe/my-forms/${user.id}`, { headers });
+        const formsRes = await backendApi.get(`/api/coe/my-forms/${user.id}`);
         const formsData = formsRes.data || [];
 
         // 2. Map Backend Forms to UI History Array

@@ -11,8 +11,8 @@ import GlassHeader from '../../components/common/GlassHeader';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const Attendance = () => {
   const navigate = useNavigate();
@@ -35,24 +35,20 @@ const Attendance = () => {
 
   const fetchInitialData = async () => {
     try {
-      const token = localStorage.getItem('sessionToken');
-      const headers = { 'Authorization': `Bearer ${token}` };
-
       // 1. Get Session Info
-      const sessionRes = await fetch(`${API_BASE}/session/info`, { headers });
-      const session = await sessionRes.json();
+      const sessionRes = await backendApi.get('/session/info');
+      const session = sessionRes.data;
       setSessionData(session);
 
       // 2. Get My Batch Info (Find where student is enrolled)
-      const batchRes = await fetch(`${API_BASE}/api/batches`, { headers });
-      const batches = await batchRes.json();
-      const studentBatch = batches.find(b => b.students && b.students.includes(session.user.id));
+      const batchRes = await backendApi.get('/api/batches');
+      const batches = batchRes.data;
+      const studentBatch = batches.find(b => b.students && b.students.includes(session.user?.id || session.id));
       
       if (studentBatch) {
         setMyBatch(studentBatch);
         // 3. Fetch My Attendance Records
-        // Note: Ensure your backend has a route like /api/attendance/my-records or adapt this URL
-        fetchAttendanceRecords(studentBatch._id, headers);
+        fetchAttendanceRecords(studentBatch._id);
       } else {
         setLoading(false);
       }
@@ -63,24 +59,22 @@ const Attendance = () => {
     }
   };
 
-  const fetchAttendanceRecords = async (batchId, headers) => {
+  const fetchAttendanceRecords = async (batchId) => {
     try {
         // Construct query parameters for the current year
         const startDate = new Date(new Date().getFullYear(), 0, 1).toISOString(); 
         const endDate = new Date().toISOString();
 
         // This endpoint should return the logged-in student's attendance records
-        const res = await fetch(`${API_BASE}/api/attendance/my-records?batchId=${batchId}&startDate=${startDate}&endDate=${endDate}`, { headers });
+        const res = await backendApi.get(`/api/attendance/my-records?batchId=${batchId}&startDate=${startDate}&endDate=${endDate}`);
         
-        if (res.ok) {
-            const data = await res.json();
-            processAttendanceData(data);
-        } else {
-            console.warn("Attendance route not found or error");
-            setAttendanceRecords([]);
-        }
-    } catch (e) { console.error(e); }
-    setLoading(false);
+        processAttendanceData(res.data);
+    } catch (e) { 
+        console.warn("Attendance route not found or error", e);
+        setAttendanceRecords([]);
+    } finally {
+        setLoading(false);
+    }
   };
 
   // --- 2. Process Data & Calculate Stats ---

@@ -9,8 +9,7 @@ import {
 import { useTheme } from '../context/ThemeContext'; 
 import ModernPDFViewer from './ModernPDFViewer'; 
 import CustomVideoPlayer from './CustomVideoPlayer';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; 
+import backendApi from '../../utils/backend-api';
 
 // Replace existing GlassHeader const
 const GlassHeader = ({ children, isDarker }) => (
@@ -76,15 +75,7 @@ const ClsContentDetails = () => {
     setIsCompleted(newStatus);
 
     try {
-      const token = localStorage.getItem('sessionToken');
-      await fetch(`${API_BASE}/api/content/${contentId}/complete`, {
-        method: 'POST',
-        headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isCompleted: newStatus })
-      });
+      await backendApi.post(`/api/content/${contentId}/complete`, { isCompleted: newStatus });
     } catch (err) {
       console.error("Failed to update status", err);
       setIsCompleted(!newStatus); // Revert on error
@@ -94,25 +85,19 @@ const ClsContentDetails = () => {
   // --- FETCH STATUS FROM DB ON LOAD ---
 useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('sessionToken');
       try {
         // 1. Get User Role (To hide button for faculty)
-        const sessionRes = await fetch(`${API_BASE}/session/info`, { 
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (sessionRes.ok) {
-            const sessionData = await sessionRes.json();
-            setUserRole(sessionData.role);
+        const sessionRes = await backendApi.get('/session/info');
+        if (sessionRes.data) {
+            // Note: Adjust .role or .user.role based on how your backend sends it
+            setUserRole(sessionRes.data.role || sessionRes.data.user?.role); 
         }
 
         // 2. Fetch Content Details
-        const res = await fetch(`${API_BASE}/api/content/${contentId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setContent(data);
-          setIsCompleted(data.isCompleted); // Sync status from DB
+        const res = await backendApi.get(`/api/content/${contentId}`);
+        if (res.data) {
+          setContent(res.data);
+          setIsCompleted(res.data.isCompleted); // Sync status from DB
         }
       } catch (error) {
         console.error("Failed to fetch data", error);
@@ -135,20 +120,7 @@ useEffect(() => {
 
     try {
       // 2. Call Backend
-      const res = await fetch(`${API_BASE}/api/progress/toggle-complete`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ contentId: contentItem._id })
-      });
-
-      if (!res.ok) {
-        // Revert if error
-        setIsCompleted(previousState);
-        alert("Failed to save progress. Please try again.");
-      }
+      await backendApi.post('/api/progress/toggle-complete', { contentId: contentItem._id });
     } catch (e) { 
       console.error("Toggle complete error", e);
       setIsCompleted(previousState);
@@ -172,13 +144,9 @@ useEffect(() => {
   const toggleDownloadPermission = async () => {
     if (role !== 'faculty') return;
     try {
-      const response = await fetch(`${API_BASE}/api/content/${contentItem._id}/toggle-download`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAllowDownload(data.allowDownload);
+      const response = await backendApi.put(`/api/content/${contentItem._id}/toggle-download`);
+      if (response.data) {
+        setAllowDownload(response.data.allowDownload);
       }
     } catch (e) { console.error("Toggle Error:", e); }
   };

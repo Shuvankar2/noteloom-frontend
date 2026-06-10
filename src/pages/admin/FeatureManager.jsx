@@ -6,7 +6,7 @@ import { useITSessionManager } from '../../hooks/useITSessionManager';
 import GlassHeader from '../../components/common/GlassHeader';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; // Or import from utils
+import backendApi from '../../utils/backend-api';
 
 const FeatureManager = () => {
   const { isDarkMode } = useTheme();
@@ -33,13 +33,10 @@ const FeatureManager = () => {
   useEffect(() => {
     const fetchTenants = async () => {
       try {
-        const response = await fetch(`${API_BASE}/it-admin/tenants-list`, {
+        const response = await backendApi.get('/it-admin/tenants-list', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}` }
         });
-        if (response.ok) {
-          const data = await response.json();
-          setTenants(data);
-        }
+        setTenants(response.data);
       } catch (error) {
         console.error("Error fetching tenants:", error);
       }
@@ -53,11 +50,10 @@ const FeatureManager = () => {
     const fetchConfig = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`${API_BASE}/it-admin/menu-config/${selectedTenant._id}`, {
+        const response = await backendApi.get(`/it-admin/menu-config/${selectedTenant._id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('itSessionToken')}` }
         });
-        if (!response.ok) throw new Error('Failed to fetch config');
-        const data = await response.json();
+        const data = response.data;
         setConfigs({
           student: data.student || [],
           faculty: data.faculty || [],
@@ -95,20 +91,17 @@ const FeatureManager = () => {
   const handleSave = async () => {
     setSaveLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/it-admin/menu-config`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      await backendApi.post('/it-admin/menu-config', {
           tenantId: selectedTenant._id,
           role: activeRoleTab,
           tabs: configs[activeRoleTab]
-        })
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('itSessionToken')}`
+        }
       });
-      if (response.ok) alert(`${activeRoleTab.toUpperCase()} settings saved!`);
-      else alert("Failed to save configuration.");
+      
+      alert(`${activeRoleTab.toUpperCase()} settings saved!`);
     } catch (error) {
       console.error("Error saving:", error);
       alert("Error saving configuration.");

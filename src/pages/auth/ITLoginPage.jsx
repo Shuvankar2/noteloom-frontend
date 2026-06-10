@@ -8,7 +8,7 @@ import ThemeToggle from "../../components/common/ThemeToggle";
 import Footer from "../../components/common/Footer";
 
 // Define API_BASE locally or import it from a config file if you have one
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const ITLoginPage = () => {
   const { isDarkMode } = useTheme();
@@ -22,34 +22,25 @@ const ITLoginPage = () => {
     setLoading(true);
     
     try {
-      // FIXED: Connect to real MongoDB backend instead of mock
-      const response = await fetch(`${API_BASE}/it-admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: password,
-        }),
+      // Connect to real MongoDB backend using the automated Axios instance
+      const response = await backendApi.post('/it-admin/login', {
+        email: email.trim(),
+        password: password,
       });
 
-      const data = await response.json();
+      const data = response.data;
+      console.log("IT Login successful", data);
 
-      if (response.ok) {
-        console.log("IT Login successful", data);
-
-        // Store IT session token and login time
-        localStorage.setItem('itSessionToken', data.sessionToken);
-        localStorage.setItem('itLoginTime', new Date().toISOString());
-        
-        navigate("/it-admin");
-      } else {
-        throw new Error(data.error || 'IT Login failed');
-      }
+      // Store IT session token and login time
+      localStorage.setItem('itSessionToken', data.sessionToken);
+      localStorage.setItem('itLoginTime', new Date().toISOString());
+      
+      navigate("/it-admin");
+      
     } catch (error) {
       console.error("IT Authentication error:", error);
-      alert(error.message || "An error occurred during IT authentication");
+      // Automatically grab the specific error message from the backend (e.g. "Invalid credentials")
+      alert(error.response?.data?.error || "An error occurred during IT authentication");
     } finally {
       setLoading(false);
     }

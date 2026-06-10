@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { useReactToPrint } from 'react-to-print';
 import { useNavigate } from 'react-router-dom';
 import { LeaveReceipt } from './LeaveReceipt';
@@ -10,8 +9,9 @@ import {
   ChevronRight, ArrowLeft, User 
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (
@@ -46,25 +46,11 @@ const FacultyLeave = () => {
 
   // 2. Fetch fresh session info on mount to ensure ID is correct
 // 2. Fetch fresh session info on mount
+  // 2. Fetch fresh session info on mount
   useEffect(() => {
     const fetchSession = async () => {
         try {
-            // RETRIEVE TOKEN FROM STORAGE (Check if you stored it as 'sessionToken' or 'token')
-            const token = localStorage.getItem('sessionToken'); 
-
-            if (!token) {
-                console.warn("No token found, redirecting to login...");
-                // Optional: navigate('/login');
-                return;
-            }
-
-            const res = await axios.get(`${API_BASE}/session/info`, { 
-                withCredentials: true,
-                headers: { 
-                    // ATTACH THE TOKEN HERE
-                    'Authorization': `Bearer ${token}` 
-                }
-            });
+            const res = await backendApi.get('/session/info');
 
             if (res.data && res.data.user) {
                 setUserProfile({
@@ -96,7 +82,7 @@ const FacultyLeave = () => {
 
   const fetchHistory = async () => {
     try {
-        const res = await axios.get(`${API_BASE}/api/leave/history/${userProfile.id}`);
+        const res = await backendApi.get(`/api/leave/history/${userProfile.id}`);
         setHistory(res.data);
     } catch(err) {
         console.error("Failed to load history");
@@ -116,7 +102,7 @@ const FacultyLeave = () => {
         reason: formData.get('reason')
     };
     try {
-        const res = await axios.post(`${API_BASE}/api/leave/apply`, data);
+        const res = await backendApi.post(`/api/leave/apply`, data);
         setLastSubmit(res.data);
     } catch(err) { alert('Error submitting leave'); }
   };

@@ -6,8 +6,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { useTheme } from '../context/ThemeContext';
 import mermaid from 'mermaid';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 
 // --- SUB-COMPONENT: Mermaid Diagram Renderer (Dark Mode + Frosted Glass) ---
@@ -193,8 +192,7 @@ const NoteloomAi = () => {
   const [chatMode, setChatMode] = useState('standard'); // 'standard', 'tutor'
   const imageInputRef = useRef(null); // For Snap & Solve
 
-  // --- CRITICAL FIX: DEFINE THESE BEFORE useEffect ---
-  const token = localStorage.getItem('sessionToken');
+
   // const isPublicPage = ['/', '/login', '/it-login'].includes(location.pathname);
 
   // New Logic: Whitelist approach (Show ONLY on these pages)
@@ -218,19 +216,16 @@ const isAllowedPage = allowedPaths.some(path => location.pathname.includes(path)
     else if (path.includes('/it-admin')) setContextName('IT Admin Portal');
     else setContextName('Dashboard');
 
-    // B. Fetch User Info (If token exists)
+    // B. Fetch User Info
     const fetchUser = async () => {
-      if (!token) return; 
       try {
-        const res = await fetch(`${API_BASE}/session/info`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const res = await backendApi.get('/session/info');
+        if (res.data) {
+          const data = res.data;
           // Fix to ensure we get the name correctly even if nested
           const realName = data.user?.name || data.name || data.user?.username || 'User';
           setUserName(realName); 
-          setUserRole(data.role);      
+          setUserRole(data.role || data.user?.role);      
         }
       } catch (e) {
         console.error("AI Session Fetch Error", e);
@@ -241,7 +236,7 @@ const isAllowedPage = allowedPaths.some(path => location.pathname.includes(path)
     if (isAllowedPage) {
       fetchUser();
     }
-  }, [location.pathname, token, isAllowedPage]);
+  }, [location.pathname, isAllowedPage]);
 
   // --- 2. DYNAMIC WELCOME MESSAGE ---
   useEffect(() => {
@@ -278,18 +273,13 @@ const handleSend = async (overrideMode = null) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/ai/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ 
+      const response = await backendApi.post('/api/ai/chat', { 
           message: currentInput, 
           context: { classroomName: contextName, userName: userName, role: userRole },
-          mode: modeToSend // Send the mode
-        })
+          mode: modeToSend 
       });
 
-      const data = await response.json();
-      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: data.reply }]);
+      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: response.data.reply }]);
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: "Connection failed." }]);
     } finally {
@@ -311,13 +301,10 @@ const handleFileUpload = async (e, taskType = 'summarize') => {
     formData.append('taskType', taskType); // 'solve' or 'summarize'
 
     try {
-      const response = await fetch(`${API_BASE}/api/ai/summarize-file`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
+      const response = await backendApi.post('/api/ai/summarize-file', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const data = await response.json();
-      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: data.summary }]);
+      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: response.data.summary }]);
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: "Upload failed." }]);
     } finally {
@@ -378,17 +365,8 @@ const handleFileUpload = async (e, taskType = 'summarize') => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/ai/transcribe-local-video`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ filename })
-      });
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: data.reply }]);
+      const response = await backendApi.post('/api/ai/transcribe-local-video', { filename });
+      setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: response.data.reply }]);
     } catch (error) {
       setMessages(prev => [...prev, { id: Date.now() + 1, type: 'bot', text: "Failed to analyze video." }]);
     } finally {
@@ -397,8 +375,8 @@ const handleFileUpload = async (e, taskType = 'summarize') => {
     }
   };
 
-  // --- FINAL GUARD ---
- if (!token || !isAllowedPage) return null;
+// --- FINAL GUARD ---
+ if (!isAllowedPage) return null;
 
 // --- E. RENDER HELPER (FIXED) ---
   const renderMessageContent = (text) => {

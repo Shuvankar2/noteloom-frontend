@@ -12,8 +12,7 @@ import LOADER_GIF from '../../utils/LoadingMan.gif';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown'; 
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const getYearFromSemester = (sem) => {
   if (sem <= 2) return "1st Year";
@@ -51,27 +50,23 @@ const MyCourses = () => {
          return;
       }
 
-      // Fetch Session Info
-      const sessionRes = await fetch(`${API_BASE}/session/info`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (sessionRes.ok) {
-        const sessionData = await sessionRes.json();
-        setCurrentUser(sessionData.user); 
-        setCollegeName(sessionData.tenant?.name || 'My College');
-      }
+      // Automatically passes tokens via interceptor
+      const sessionRes = await backendApi.get('/session/info');
+      setCurrentUser(sessionRes.data.user);
+      setCollegeName(sessionRes.data.tenant?.name || 'My College');
 
-      // Fetch Departments (for Stream Labels) AND Classrooms
-      const [classRes, deptRes] = await Promise.all([
-        fetch(`${API_BASE}/api/classrooms`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE}/api/departments`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const [classRes, subRes, deptRes] = await Promise.all([
+        backendApi.get('/api/student/my-classes'),
+        backendApi.get('/api/all-subjects'),
+        backendApi.get('/api/departments')
       ]);
 
-      if (classRes.ok) setCourses(await classRes.json());
-      if (deptRes.ok) setDepartments(await deptRes.json());
+      setCourses(classRes.data);
+      setAvailableSubjects(subRes.data);
+      setDepartments(deptRes.data);
 
     } catch (error) {
-      console.error("Failed to load data");
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -99,14 +94,14 @@ const MyCourses = () => {
   };
 
   const handleUnenroll = async (classId) => {
-    if(!confirm("Are you sure you want to unenroll from this course?")) return;
-    const res = await fetch(`${API_BASE}/api/classrooms/${classId}/unenroll`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
-    if (res.ok) fetchData();
-    else alert("Failed to unenroll");
-  };
+      if(!confirm("Are you sure you want to unenroll from this class?")) return;
+      try {
+        await backendApi.delete(`/api/classrooms/${classId}/unenroll`);
+        fetchData();
+      } catch (e) { 
+        alert(e.response?.data?.error || "Error leaving class"); 
+      }
+    };
 
   const CourseMenu = ({ classId }) => {
     const [open, setOpen] = useState(false);

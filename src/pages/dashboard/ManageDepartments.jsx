@@ -13,7 +13,7 @@ import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 import LOADER_GIF from '../../utils/LoadingMan.gif'; 
 
 // Animation Variants
@@ -87,10 +87,8 @@ const ManageDepartments = () => {
     setManagingBatch(batch);
     setBatchStudents([]);
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${batch._id}/students`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) setBatchStudents(await res.json());
+      const res = await backendApi.get(`/api/batches/${batch._id}/students`);
+      setBatchStudents(res.data);
     } catch (e) { console.error(e); }
   };
 
@@ -98,34 +96,18 @@ const ManageDepartments = () => {
     if (!newStudentId.trim()) return;
     setEnrollLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${managingBatch._id}/enroll`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ noteloomId: newStudentId })
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        setBatchStudents([...batchStudents, data.student]); 
-        setNewStudentId("");
-      } else {
-        alert(data.error || "Failed to enroll student");
-      }
-    } catch (e) { alert("Connection Error"); } 
+      const res = await backendApi.post(`/api/batches/${managingBatch._id}/enroll`, { noteloomId: newStudentId });
+      setBatchStudents([...batchStudents, res.data.student]); 
+      setNewStudentId("");
+    } catch (e) { alert(e.response?.data?.error || "Failed to enroll student"); } 
     finally { setEnrollLoading(false); }
   };
 
   const handleUnenrollStudent = async (studentId) => {
     if (!window.confirm("Remove student from this batch?")) return;
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${managingBatch._id}/students/${studentId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (res.ok) setBatchStudents(batchStudents.filter(s => s._id !== studentId));
+      await backendApi.delete(`/api/batches/${managingBatch._id}/students/${studentId}`);
+      setBatchStudents(batchStudents.filter(s => s._id !== studentId));
     } catch (e) { console.error(e); }
   };
 
@@ -169,30 +151,20 @@ const ManageDepartments = () => {
   // --- Fetch Logic ---
   const fetchSession = async () => {
     try {
-      const response = await fetch(`${API_BASE}/session/info`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentUser(data.user);
-        setCollegeName(data.tenant?.name || 'College');
-      }
+      const res = await backendApi.get('/session/info');
+      setCurrentUser(res.data.user);
+      setCollegeName(res.data.tenant?.name || 'College');
     } catch (error) { console.error("Error fetching session info", error); }
   };
 
   const fetchDepartments = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/api/departments`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDepartments(data);
-        if (selectedDept) {
-          const updated = data.find(d => d._id === selectedDept._id);
-          if (updated) setSelectedDept(updated);
-        }
+      const res = await backendApi.get('/api/departments');
+      setDepartments(res.data);
+      if (selectedDept) {
+        const updated = res.data.find(d => d._id === selectedDept._id);
+        if (updated) setSelectedDept(updated);
       }
     } catch (error) { showToast('Failed to load departments', 'error'); }
     setIsLoading(false);
@@ -200,10 +172,8 @@ const ManageDepartments = () => {
 
   const fetchBatches = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/batches`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if(res.ok) setBatches(await res.json());
+      const res = await backendApi.get('/api/batches');
+      setBatches(res.data);
     } catch(e) { console.error(e); }
   };
 
@@ -211,10 +181,8 @@ const ManageDepartments = () => {
   const fetchSubjects = async () => {
     if (!selectedDept) return;
     try {
-      const res = await fetch(`${API_BASE}/api/departments/${selectedDept._id}/subjects`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if(res.ok) setSubjects(await res.json());
+      const res = await backendApi.get(`/api/departments/${selectedDept._id}/subjects`);
+      setSubjects(res.data);
     } catch(e) { console.error(e); }
   };
 
@@ -224,21 +192,11 @@ const ManageDepartments = () => {
     if (!selectedDept) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/departments/${selectedDept._id}/subjects`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSubject)
-      });
-      
-      if(res.ok) {
-        showToast("Subject Added Successfully");
-        setNewSubject({ name: '', code: '', type: 'Theory', credits: 3, semester: 1 });
-        fetchSubjects();
-      } else {
-        const d = await res.json();
-        showToast(d.error || "Failed to add subject", 'error');
-      }
-    } catch(e) { showToast("Error adding subject", 'error'); }
+      await backendApi.post(`/api/departments/${selectedDept._id}/subjects`, newSubject);
+      showToast("Subject Added Successfully");
+      setNewSubject({ name: '', code: '', type: 'Theory', credits: 3, semester: 1 });
+      fetchSubjects();
+    } catch(e) { showToast(e.response?.data?.error || "Error adding subject", 'error'); }
     setIsLoading(false);
   };
 
@@ -247,11 +205,8 @@ const ManageDepartments = () => {
     if(!confirm("Delete this subject?")) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/departments/subjects/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      if(res.ok) { showToast("Subject Deleted"); fetchSubjects(); }
+      await backendApi.delete(`/api/departments/subjects/${id}`);
+      showToast("Subject Deleted"); fetchSubjects();
     } catch(e) { console.error(e); }
     setIsLoading(false);
   };
@@ -283,11 +238,7 @@ const ManageDepartments = () => {
     if (!newDeptName) return;
     setIsLoading(true);
     try {
-      await fetch(`${API_BASE}/api/departments`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newDeptName })
-      });
+      await backendApi.post('/api/departments', { name: newDeptName });
       setNewDeptName('');
       await fetchDepartments();
       showToast('Department created successfully!');
@@ -296,12 +247,9 @@ const ManageDepartments = () => {
   };
 
   const handleDeleteDept = async () => {
-    if(!confirm(`Are you sure you want to delete ${selectedDept.name}? This action cannot be undone.`)) return;
+    if(!confirm(`Are you sure you want to delete ${selectedDept.name}?`)) return;
     setIsLoading(true);
-    await fetch(`${API_BASE}/api/departments/${selectedDept._id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-    });
+    await backendApi.delete(`/api/departments/${selectedDept._id}`);
     setSelectedDept(null);
     await fetchDepartments();
     showToast('Department deleted');
@@ -311,19 +259,13 @@ const ManageDepartments = () => {
   const handleAddStream = async (e) => {
     e.preventDefault();
     if (!newStreamName || !newStreamCode) return;
-    
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/departments/${selectedDept._id}/streams`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newStreamName, code: newStreamCode })
-      });
-      if (!res.ok) throw new Error('Failed');
+      await backendApi.post(`/api/departments/${selectedDept._id}/streams`, { name: newStreamName, code: newStreamCode });
       setNewStreamName(''); setNewStreamCode('');
       await fetchDepartments();
       showToast('Stream added successfully');
-    } catch (error) { showToast('Failed to add stream (Check if code unique)', 'error'); }
+    } catch (error) { showToast('Failed to add stream', 'error'); }
     setIsLoading(false);
   };
 
@@ -351,35 +293,14 @@ const ManageDepartments = () => {
   const handleSaveStreamConfig = async (dataToSave = null) => {
     if (!editingStream) return;
     setIsLoading(true);
-
     const payload = dataToSave || streamConfigForm;
-
     try {
-        const res = await fetch(`${API_BASE}/api/departments/${selectedDept._id}/streams/${editingStream._id}/config`, {
-            method: 'PUT',
-            headers: { 
-                'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-                'Content-Type': 'application/json' 
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            const status = payload.isLocked ? 'Locked & Saved' : 'Saved';
-            showToast(`Configuration ${status}!`);
-            
-            await fetchDepartments(); // Refresh data from server
-            
-            // Update local editing stream reference
-            const updatedDept = await res.json();
-            const updatedStream = updatedDept.streams.find(s => s._id === editingStream._id);
-            setEditingStream(updatedStream);
-        } else {
-            showToast('Failed to save configuration', 'error');
-        }
-    } catch (e) {
-        showToast('Network error', 'error');
-    }
+        const res = await backendApi.put(`/api/departments/${selectedDept._id}/streams/${editingStream._id}/config`, payload);
+        const status = payload.isLocked ? 'Locked & Saved' : 'Saved';
+        showToast(`Configuration ${status}!`);
+        await fetchDepartments();
+        setEditingStream(res.data.streams.find(s => s._id === editingStream._id));
+    } catch (e) { showToast('Network error', 'error'); }
     setIsLoading(false);
   };
 
@@ -395,32 +316,18 @@ const ManageDepartments = () => {
   const handleCreateBatch = async (e) => {
     e.preventDefault();
     if(!selectedStreamForBatch) return showToast("Select a stream first", 'error');
-    if(!batchMonth) return showToast("Select admission month", 'error');
-
     setIsLoading(true);
-    const finalSections = hasSections ? sectionNames : ["N/A"];
-    
     try {
-      const res = await fetch(`${API_BASE}/api/batches`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      await backendApi.post('/api/batches', { 
           departmentId: selectedDept._id,
           streamCode: selectedStreamForBatch,
           admissionYear: batchYear,
           admissionMonth: batchMonth,
           batchName: batchName,
-          sections: finalSections
-        })
+          sections: hasSections ? sectionNames : ["N/A"]
       });
-
-      if(res.ok) {
-        await fetchBatches();
-        showToast("Classes Created Successfully");
-        setBatchName(''); setHasSections(false); setSectionCount(1); setSectionNames(['A']);
-      } else {
-        showToast("Failed to create batch", 'error');
-      }
+      await fetchBatches();
+      showToast("Classes Created Successfully");
     } catch (error) { showToast('Error creating batch', 'error'); }
     setIsLoading(false);
   };
@@ -441,23 +348,13 @@ const ManageDepartments = () => {
   // --- Batch Edit/Delete Handlers ---
 
   const handleDeleteBatch = async (batchId) => {
-    if (!confirm("Are you sure you want to delete this batch/class? This cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this batch/class?")) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${batchId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}` }
-      });
-      
-      if (res.ok) {
-        showToast("Batch deleted successfully");
-        fetchBatches(); // Refresh list
-      } else {
-        showToast("Failed to delete batch", "error");
-      }
-    } catch (error) {
-      showToast("Network error deleting batch", "error");
-    }
+      await backendApi.delete(`/api/batches/${batchId}`);
+      showToast("Batch deleted successfully");
+      fetchBatches();
+    } catch (error) { showToast("Error deleting batch", "error"); }
     setIsLoading(false);
   };
 
@@ -476,25 +373,13 @@ const ManageDepartments = () => {
     e.preventDefault();
     if (!editingBatch) return;
     setIsLoading(true);
-    
     try {
-      const res = await fetch(`${API_BASE}/api/batches/${editingBatch._id}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(batchEditForm)
-      });
-
-      if (res.ok) {
-        showToast("Batch updated successfully");
-        setShowEditBatchModal(false);
-        setEditingBatch(null);
-        fetchBatches(); // Refresh list
-      } else {
-        showToast("Failed to update batch", "error");
-      }
-    } catch (error) {
-      showToast("Network error updating batch", "error");
-    }
+      await backendApi.put(`/api/batches/${editingBatch._id}`, batchEditForm);
+      showToast("Batch updated successfully");
+      setShowEditBatchModal(false);
+      setEditingBatch(null);
+      fetchBatches();
+    } catch (error) { showToast("Error updating batch", "error"); }
     setIsLoading(false);
   };
 

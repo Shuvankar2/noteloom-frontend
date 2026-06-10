@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   Upload, FileText, Trash2, Search, BookOpen, 
@@ -16,8 +15,8 @@ import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 import LoadingGif from '../../utils/LoadingMan.gif'; 
 import ModernPdfViewer from '../../components/ModernPDFViewer';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const FacultyQuestionBank = () => {
   const navigate = useNavigate();
@@ -59,18 +58,12 @@ const FacultyQuestionBank = () => {
   }, [user]);
 
   const fetchInitialData = async () => {
-    try {
-      const token = localStorage.getItem('sessionToken');
-      if (!token) return;
+  try {
 
-      const [deptRes, qRes] = await Promise.all([
-        axios.get(`${API_BASE}/api/departments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_BASE}/api/coe/questions?facultyId=${user?._id}`, {
-             headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
+    const [deptRes, qRes] = await Promise.all([
+    backendApi.get('/api/departments'),
+    backendApi.get(`/api/coe/questions?facultyId=${user?._id}`)
+]);
 
       setDepartments(deptRes.data);
       setQuestions(qRes.data);
@@ -89,13 +82,8 @@ const FacultyQuestionBank = () => {
     if (!deptId) return;
 
     try {
-      const token = localStorage.getItem('sessionToken');
-      const response = await axios.get(
-        `${API_BASE}/api/departments/${deptId}/subjects`, 
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      
+      const response = await backendApi.get(`/api/departments/${deptId}/subjects`);
       setSubjects(response.data);
     } catch (err) {
       console.error("Failed to fetch department subjects", err);
@@ -120,13 +108,12 @@ const FacultyQuestionBank = () => {
     data.append('file', file);
 
     try {
-        const token = localStorage.getItem('sessionToken');
-        await axios.post(`${API_BASE}/api/coe/upload-question`, data, {
-        headers: { 
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-        }
-        });
+        
+        await backendApi.post('/api/coe/upload-question', data, {
+    headers: { 
+        'Content-Type': 'multipart/form-data'
+    }
+    });
 
         alert('Question uploaded successfully');
         setFile(null);
@@ -140,7 +127,7 @@ const FacultyQuestionBank = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this file?')) {
-      await axios.delete(`${API_BASE}/api/coe/question/${id}`);
+      await backendApi.delete(`/api/coe/question/${id}`);
       fetchInitialData();
     }
   };
@@ -171,7 +158,7 @@ const FacultyQuestionBank = () => {
             >
                 Close
             </button>
-            <ModernPdfViewer fileUrl={`${API_BASE}${viewFile}`} />
+            <ModernPdfViewer fileUrl={viewFile} />
             </div>
         </div>
       )}
@@ -443,8 +430,8 @@ const FacultyQuestionBank = () => {
                                 {isPdf ? (
                                     <button 
                                         onClick={() => {
-                                            const fullPath = `${API_BASE}${q.fileUrl}`;
-                                            window.open(`/pdf-viewer?file=${encodeURIComponent(fullPath)}`, '_blank');
+                                            const fullPath = q.fileUrl;
+window.open(`/pdf-viewer?file=${encodeURIComponent(fullPath)}`, '_blank');
                                         }}
                                         className={`p-2 rounded-lg transition-colors flex items-center justify-center ${isDarkMode ? 'text-blue-400 hover:bg-blue-500/20' : 'text-blue-600 hover:bg-blue-50'}`}
                                         title="View PDF"

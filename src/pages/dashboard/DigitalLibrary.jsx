@@ -16,8 +16,8 @@ import GlassHeader from '../../components/common/GlassHeader';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app'; 
 
 const DigitalLibrary = () => {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const DigitalLibrary = () => {
   // --- USER SESSION STATE ---
   const [sessionData, setSessionData] = useState({ user: {}, tenant: {} });
   const [role, setRole] = useState('student'); 
-  const sessionToken = localStorage.getItem('sessionToken');
 
   // --- UI STATE ---
   const [searchTerm, setSearchTerm] = useState('');
@@ -158,33 +157,6 @@ const DigitalLibrary = () => {
     fetchDepartments(); 
   }, []);
 
-  const fetchSession = async () => {
-  try {
-      const res = await fetch(`${API_BASE}/session/info`, {
-          headers: { 'Authorization': `Bearer ${sessionToken}` }
-      });
-        if(res.ok) {
-            const data = await res.json();
-            setSessionData({ user: data.user, tenant: data.tenant });
-            setRole(data.role || 'student');
-        }
-    } catch(e) { console.error(e); }
-  };
-
-  const fetchDepartments = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/departments`, {
-        headers: { Authorization: `Bearer ${sessionToken}` }
-      });
-      if(res.ok) {
-          const data = await res.json();
-          setDepartments(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch departments');
-    }
-  };
-
   const getDashboardTitle = () => {
       switch(role) {
           case 'student': return 'Student Dashboard';
@@ -195,103 +167,89 @@ const DigitalLibrary = () => {
       }
   };
 
+  const fetchSession = async () => {
+    try {
+      const res = await backendApi.get('/session/info');
+      setSessionData({ user: res.data.user, tenant: res.data.tenant });
+      setRole(res.data.role || 'student');
+    } catch(e) { console.error(e); }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await backendApi.get('/api/departments');
+      setDepartments(res.data);
+    } catch (err) {
+      console.error('Failed to fetch departments');
+    }
+  };
+
   const fetchDigitalData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/library/digital`, {
-        headers: { 'Authorization': `Bearer ${sessionToken}` }
-      });
-      if (!res.ok) throw new Error("Failed to load digital resources");
-      const data = await res.json();
-      setCredentials(data.credentials);
-      setResources(data.resources);
+      const res = await backendApi.get('/api/library/digital');
+      setCredentials(res.data.credentials);
+      setResources(res.data.resources);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const fetchPhysicalData = async () => {
-  const controller = new AbortController();
-
-  setIsLoading(true);
-  try {
-    const res = await fetch(`${API_BASE}/api/library/physical`, {
-      headers: { 'Authorization': `Bearer ${sessionToken}` },
-      signal: controller.signal
-    });
-
-    if (!res.ok) throw new Error("Failed to load inventory");
-    const data = await res.json();
-    setPhysicalBooks(data);
-  } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.error("Inventory Load Error:", error);
+    const controller = new AbortController();
+    setIsLoading(true);
+    try {
+      const res = await backendApi.get('/api/library/physical', { signal: controller.signal });
+      setPhysicalBooks(res.data);
+    } catch (error) {
+      if (error.name !== 'CanceledError') {
+        console.error("Inventory Load Error:", error);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
-  }
+    return () => controller.abort();
+  };
 
-  return () => controller.abort();
-};
+
 
 // --- ISSUE FLOW FUNCTIONS ---
   
-  // Step 1: Fetch User Details
-  const handleFetchUser = async () => {
+const handleFetchUser = async () => {
       if(!studentIdInput) return triggerPopup("Enter User ID/Email", "error");
       setIsLoading(true);
       try {
-          const res = await fetch(`${API_BASE}/api/library/physical/user/${studentIdInput}`, {
-              headers: { 'Authorization': `Bearer ${sessionToken}` }
-          });
-          const data = await res.json();
-          if(!res.ok) throw new Error(data.error || "User not found");
-          
-          setIssueUser(data.user);
-          setIssueHoldings(data.holdings);
-          setIssueStep(2); // Move to next step
+          const res = await backendApi.get(`/api/library/physical/user/${studentIdInput}`);
+          setIssueUser(res.data.user);
+          setIssueHoldings(res.data.holdings);
+          setIssueStep(2);
       } catch (err) {
-          triggerPopup(err.message, "error");
+          triggerPopup(err.response?.data?.error || "User not found", "error");
+      } finally {
+          setIsLoading(false);
       }
-      setIsLoading(false);
   };
 
-  // Step 2: Confirm Issue
   const handleConfirmIssue = async () => {
       if(!scanCopyId) return triggerPopup("Scan a Book Copy ID", "error");
-      
       try {
-          const res = await fetch(`${API_BASE}/api/library/physical/checkout`, {
-              method: 'POST',
-              headers: { 
-                  'Authorization': `Bearer ${sessionToken}`,
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ copyId: scanCopyId, userId: issueUser.id }) 
+          const res = await backendApi.post('/api/library/physical/checkout', { 
+            copyId: scanCopyId, 
+            userId: issueUser.id 
           });
-          
-          const data = await res.json();
-          if(!res.ok) throw new Error(data.error);
-
-          triggerPopup(data.message, "success");
-          
-          // [CRITICAL FOR LIVE UPDATE]
-          // 1. Re-fetch the specific user's data to update the "Currently Holding" list instantly
+          triggerPopup(res.data.message, "success");
           await handleFetchUser(); 
-          
-          // 2. Clear the input for the next book
           setScanCopyId(''); 
-          
-          // 3. Update the main inventory list in the background
           fetchPhysicalData(); 
-
       } catch (err) {
-          triggerPopup(err.message, "error");
+          triggerPopup(err.response?.data?.error || "Issue Failed", "error");
       }
   };
 
-  const resetIssueFlow = () => {
+  // ... (Keep resetIssueFlow as is) ...
+      const resetIssueFlow = () => {
       setIssueStep(1);
       setIssueUser(null);
       setIssueHoldings([]);
@@ -299,55 +257,28 @@ const DigitalLibrary = () => {
       setScanCopyId('');
   };
 
-  // --- RETURN FLOW FUNCTIONS ---
-
   const handleSearchForReturn = async () => {
       if(!returnSearchId) return triggerPopup("Enter Copy ID", "error");
-      
       try {
-          const res = await fetch(`${API_BASE}/api/library/physical/copy/${returnSearchId}`, {
-              headers: { 'Authorization': `Bearer ${sessionToken}` }
-          });
-          const data = await res.json();
-          if(!res.ok) throw new Error(data.error);
-          
-          setReturnBookData(data); // Show details card
+          const res = await backendApi.get(`/api/library/physical/copy/${returnSearchId}`);
+          setReturnBookData(res.data);
       } catch (err) {
-          triggerPopup(err.message, "error");
+          triggerPopup(err.response?.data?.error || "Book not found", "error");
           setReturnBookData(null);
       }
   };
 
   const handleConfirmReturn = async () => {
       try {
-          const res = await fetch(`${API_BASE}/api/library/physical/return`, {
-              method: 'POST',
-              headers: { 
-                  'Authorization': `Bearer ${sessionToken}`, 
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ copyId: returnBookData.copyId })
-          });
-          
-          if(!res.ok) throw new Error("Return Failed");
-          
+          await backendApi.post('/api/library/physical/return', { copyId: returnBookData.copyId });
           triggerPopup("Book Returned Successfully", "success");
           
-          // 1. Clear the Return Panel to be ready for next scan
           setReturnBookData(null);
           setReturnSearchId('');
-          
-          // 2. [FIX] Live Update: If a user is currently selected in the Issue Panel, 
-          // refresh their holdings list immediately to reflect the return.
-          if (issueUser && studentIdInput) {
-              await handleFetchUser(); 
-          }
-
-          // 3. Refresh the main Inventory list (background update)
+          if (issueUser && studentIdInput) await handleFetchUser(); 
           fetchPhysicalData();
-
       } catch (e) { 
-          triggerPopup(e.message, "error"); 
+          triggerPopup(e.response?.data?.error || "Return Failed", "error"); 
       }
   };
 
@@ -376,20 +307,10 @@ const DigitalLibrary = () => {
 // --- RESTORE BOOK (Cancel Deletion) ---
   const handleRestoreBook = async (bookId) => {
     try {
-      // Assuming backend supports this, or use the edit route to set deleteAfter: null
-      await fetch(`${API_BASE}/api/library/physical/book/${bookId}/restore`, {
-        method: 'PUT', // or POST depending on your backend
-        headers: { 
-          Authorization: `Bearer ${sessionToken}`,
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ deleteAfter: null })
-      });
+      await backendApi.put(`/api/library/physical/book/${bookId}/restore`, { deleteAfter: null });
       triggerPopup("Deletion Cancelled", "success");
       fetchPhysicalData();
-    } catch (e) {
-      triggerPopup("Failed to restore", "error");
-    }
+    } catch (e) { triggerPopup("Failed to restore", "error"); }
   };
 
   // --- SUB-COMPONENT: COUNTDOWN TIMER ---
@@ -421,29 +342,14 @@ const DigitalLibrary = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!newUpload.url.startsWith('http')) return triggerPopup("Please enter a valid URL (http/https)", "error");
-
     try {
-        const res = await fetch(`${API_BASE}/api/library/digital/resource`, {
-            method: 'POST',
-            headers: { 
-              'Authorization': `Bearer ${sessionToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(newUpload)
-        });
-        
-        const data = await res.json(); 
-        if (!res.ok) throw new Error(data.error || "Upload failed"); 
-        
+        await backendApi.post('/api/library/digital/resource', newUpload);
         const msg = role === 'college_admin' ? "Resource Published!" : "Submitted for Review";
         triggerPopup(msg, "success");
-        
         setShowUploadModal(false);
         setNewUpload({ title: '', author: '', department: '', type: 'Notes', url: '', description: '', semester: 1, course: 'B.Tech' });
         fetchDigitalData();
-    } catch (error) {
-        triggerPopup(error.message, "error");
-    }
+    } catch (error) { triggerPopup(error.response?.data?.error || "Upload failed", "error"); }
   };
 
   const handleDeleteCredential = (credId) => {
@@ -462,162 +368,70 @@ const DigitalLibrary = () => {
     e.preventDefault();
     try {
         const isEdit = !!editingCred._id; 
-        const res = await fetch(`${API_BASE}/library/digital/credential`, {
-            method: 'PUT',
-            headers: { 
-              'Authorization': `Bearer ${sessionToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(editingCred)
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Operation failed");
-        
+        await backendApi.put('/library/digital/credential', editingCred);
         triggerPopup(isEdit ? "Credential Updated" : "Credential Added", "success");
         setShowCredModal(false);
         setEditingCred({ providerName: '', loginId: '', password: '', note: '', link: '' }); 
         fetchDigitalData();
-    } catch (error) {
-        triggerPopup(error.message, "error");
-    }
+    } catch (error) { triggerPopup(error.response?.data?.error || "Operation failed", "error"); }
   };
 
   const handleAddBook = async (e) => {
       e.preventDefault();
-      
-      // FIX: Ensure Department is selected before sending
-      if(!selectedDept) {
-          return triggerPopup("Please select a Department", "error");
-      }
-
-      // FIX: Create a payload that explicitly includes the department
-      const bookPayload = {
-          ...newBook,
-          department: selectedDept // Add department to the payload
-      };
-
+      if(!selectedDept) return triggerPopup("Please select a Department", "error");
       try {
-          const res = await fetch(`${API_BASE}/api/library/physical/book`, {
-              method: 'POST',
-              headers: { 
-                'Authorization': `Bearer ${sessionToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(bookPayload) // Send the corrected payload
-          });
-
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Failed to add book");
-          
+          await backendApi.post('/api/library/physical/book', { ...newBook, department: selectedDept });
           triggerPopup("Inventory Updated Successfully", "success");
           setShowAddBookModal(false);
-          // Reset form
           setNewBook({ title: '', author: '', category: 'CS', copiesCount: 1, course: 'B.Tech' });
           fetchPhysicalData();
-      } catch (error) {
-          console.error("Add Book Error:", error);
-          triggerPopup(error.message || "Server Error", "error");
-      }
+      } catch (error) { triggerPopup(error.response?.data?.error || "Server Error", "error"); }
   };
 
   const handleApproveResource = async (id, status) => {
       try {
-          const res = await fetch(`${API_BASE}/library/digital/resource/${id}/status`, {
-              method: 'PUT',
-              headers: { 
-                'Authorization': `Bearer ${sessionToken}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ status })
-          });
-          if(res.ok) {
-              triggerPopup(`Resource ${status}`, 'success');
-              fetchDigitalData();
-          }
+          await backendApi.put(`/library/digital/resource/${id}/status`, { status });
+          triggerPopup(`Resource ${status}`, 'success');
+          fetchDigitalData();
       } catch(e) { triggerPopup('Action failed', 'error'); }
   };
 
-  // Function to handle Delete
   const handleDeleteResource = async (id) => {
       if(!window.confirm("Are you sure you want to delete this resource?")) return;
       try {
-          const res = await fetch(`${API_BASE}/library/digital/resource/${id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${sessionToken}` }
-          });
-          if (!res.ok) throw new Error("Failed to delete");
+          await backendApi.delete(`/library/digital/resource/${id}`);
           triggerPopup("Resource Deleted", "success");
-          fetchDigitalData(); // Refresh list
-      } catch (err) {
-          triggerPopup(err.message, "error");
-      }
+          fetchDigitalData();
+      } catch (err) { triggerPopup(err.response?.data?.error || "Failed to delete", "error"); }
   };
 
-// 1. Handle Schedule Delete (24 Hours)
   const confirmScheduleDelete = async () => {
     if (!resourceToDelete) return;
-    
-    // Calculate 24 hours from now
     const deleteAfterDate = new Date(Date.now() + 24 * 60 * 60 * 1000); 
-
     try {
-        const res = await fetch(`${API_BASE}/library/digital/resource/${resourceToDelete._id}`, {
-            method: 'PUT', // We use PUT to update the deleteAfter field
-            headers: { 
-                'Authorization': `Bearer ${sessionToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ deleteAfter: deleteAfterDate })
-        });
-
-        if (!res.ok) throw new Error("Failed to schedule deletion");
-        
+        await backendApi.put(`/library/digital/resource/${resourceToDelete._id}`, { deleteAfter: deleteAfterDate });
         triggerPopup("Resource scheduled for deletion in 24h", "success");
-        setResourceToDelete(null); // Close modal
-        fetchDigitalData(); // Refresh UI
-    } catch (err) {
-        triggerPopup(err.message, "error");
-    }
+        setResourceToDelete(null); 
+        fetchDigitalData(); 
+    } catch (err) { triggerPopup(err.response?.data?.error || "Failed to schedule", "error"); }
   };
 
-  // 2. Handle Restore (Cancel Delete)
   const handleRestoreResource = async (id) => {
       try {
-        const res = await fetch(`${API_BASE}/library/digital/resource/${id}`, {
-            method: 'PUT',
-            headers: { 
-                'Authorization': `Bearer ${sessionToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ deleteAfter: null }) // Clear the timer
-        });
-        if(res.ok) {
-            triggerPopup("Resource Restored", "success");
-            fetchDigitalData();
-        }
+        await backendApi.put(`/library/digital/resource/${id}`, { deleteAfter: null });
+        triggerPopup("Resource Restored", "success");
+        fetchDigitalData();
       } catch(e) { triggerPopup("Restore failed", "error"); }
   };
 
-  // Function to submit Edit
   const handleUpdateResource = async (e) => {
       e.preventDefault();
       try {
-          const res = await fetch(`${API_BASE}/library/digital/resource/${editingResource._id}`, {
-              method: 'PUT',
-              headers: { 
-                  'Authorization': `Bearer ${sessionToken}`,
-                  'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(editingResource)
-          });
-          if (!res.ok) throw new Error("Failed to update");
+          await backendApi.put(`/library/digital/resource/${editingResource._id}`, editingResource);
           triggerPopup("Resource Updated", "success");
-          setEditingResource(null); // Close modal
+          setEditingResource(null); 
           fetchDigitalData();
-      } catch (err) {
-          triggerPopup(err.message, "error");
-      }
+      } catch (err) { triggerPopup(err.response?.data?.error || "Failed to update", "error"); }
   };
 
   const handleSaveCustomCourse = (targetSetter, targetObj) => {
@@ -659,30 +473,16 @@ const DigitalLibrary = () => {
     if(!scanCopyId || !studentIdInput) return triggerPopup("Enter Copy ID and Member ID", "error");
     setProcessingCheckout(true);
     try {
-        const res = await fetch(`${API_BASE}/api/library/physical/checkout`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${sessionToken}`,
-                'Content-Type': 'application/json'
-            },
-            // Matches Backend: sends 'studentIdentifier'
-            body: JSON.stringify({ copyId: scanCopyId, studentIdentifier: studentIdInput })
+        const res = await backendApi.post('/api/library/physical/checkout', { 
+            copyId: scanCopyId, 
+            studentIdentifier: studentIdInput 
         });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "Checkout Failed");
-        
-        // Success: Backend now returns specific role message (e.g. "Issued to Student: John")
-        triggerPopup(data.message || "Book issued successfully", "success");
-        
+        triggerPopup(res.data.message || "Book issued successfully", "success");
         setScanCopyId('');
-        // Optional: Keep student ID filled if issuing multiple books to same person? 
-        // For now, we clear it to prevent errors.
         setStudentIdInput(''); 
         fetchPhysicalData(); 
-    } catch (error) {
-        triggerPopup(error.message, "error");
-    }
-    setProcessingCheckout(false);
+    } catch (error) { triggerPopup(error.response?.data?.error || "Checkout Failed", "error"); }
+    finally { setProcessingCheckout(false); }
   };
 
   const handleReturn = (copyId) => {
@@ -2042,18 +1842,12 @@ const DigitalLibrary = () => {
         onSubmit={async (e) => {
           e.preventDefault();
 
-          await fetch(`${API_BASE}/api/library/physical/book/${showEditBookModal._id}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${sessionToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              title: showEditBookModal.title,
-              author: showEditBookModal.author,
-              category: showEditBookModal.category
-            })
-          });
+          // Replace the fetch call inside the onSubmit with:
+await backendApi.put(`/api/library/physical/book/${showEditBookModal._id}`, {
+  title: showEditBookModal.title,
+  author: showEditBookModal.author,
+  category: showEditBookModal.category
+});
 
           setShowEditBookModal(null);
           fetchPhysicalData();
@@ -2143,13 +1937,10 @@ const DigitalLibrary = () => {
 
               <button
                 onClick={async () => {
-                  await fetch(`${API_BASE}/api/library/physical/book/${bookToDelete._id}`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${sessionToken}` }
-                  });
-                  setBookToDelete(null);
-                  fetchPhysicalData();
-                }}
+  await backendApi.delete(`/api/library/physical/book/${bookToDelete._id}`);
+  setBookToDelete(null);
+  fetchPhysicalData();
+}}
                 className="flex-1 py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white shadow-lg shadow-red-500/30 transition-all active:scale-95"
               >
                 Start 48h Timer
@@ -2182,16 +1973,15 @@ const DigitalLibrary = () => {
               </button>
               <button
                 onClick={async () => {
-                  try {
-                    await fetch(`${API_BASE}/api/library/digital/credential/${credToDelete}`, {
-                      method: 'DELETE',
-                      headers: { Authorization: `Bearer ${sessionToken}` }
-                    });
-                    triggerPopup("Credential Deleted", "success");
-                    fetchDigitalData();
-                  } catch (e) { triggerPopup("Delete failed", "error"); }
-                  setCredToDelete(null);
-                }}
+  try {
+    await backendApi.delete(`/api/library/digital/credential/${credToDelete}`);
+    triggerPopup("Credential Deleted", "success");
+    fetchDigitalData();
+  } catch (e) { 
+    triggerPopup("Delete failed", "error"); 
+  }
+  setCredToDelete(null);
+}}
                 className="flex-1 py-3 rounded-xl font-bold text-sm bg-red-500 text-white hover:bg-red-600"
               >
                 Delete
@@ -2224,20 +2014,15 @@ const DigitalLibrary = () => {
               </button>
               <button
                 onClick={async () => {
-                  try {
-                    await fetch(`${API_BASE}/api/library/physical/return`, {
-                      method: 'POST',
-                      headers: {
-                        Authorization: `Bearer ${sessionToken}`,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({ copyId: copyToReturn })
-                    });
-                    triggerPopup("Book Returned", "success");
-                    fetchPhysicalData();
-                  } catch (e) { triggerPopup("Return Failed", "error"); }
-                  setCopyToReturn(null);
-                }}
+  try {
+    await backendApi.post('/api/library/physical/return', { copyId: copyToReturn });
+    triggerPopup("Book Returned", "success");
+    fetchPhysicalData();
+  } catch (e) { 
+    triggerPopup("Return Failed", "error"); 
+  }
+  setCopyToReturn(null);
+}}
                 className="flex-1 py-3 rounded-xl font-bold text-sm bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
               >
                 Confirm
@@ -2271,14 +2056,11 @@ const DigitalLibrary = () => {
               </button>
               <button
                 onClick={async () => {
-                  await fetch(`${API_BASE}/api/library/physical/copy/${copyToDelete.copyId}`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${sessionToken}` }
-                  });
-                  setCopyToDelete(null);
-                  setSelectedBookForQR(null);
-                  fetchPhysicalData();
-                }}
+  await backendApi.delete(`/api/library/physical/copy/${copyToDelete.copyId}`);
+  setCopyToDelete(null);
+  setSelectedBookForQR(null);
+  fetchPhysicalData();
+}}
                 className="flex-1 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600"
               >
                 Remove
@@ -2345,18 +2127,14 @@ const DigitalLibrary = () => {
 
                   <button 
                     onClick={async () => {
-                      // Reuse existing POST /book route which handles stock increments
-                      try {
-                        await fetch(`${API_BASE}/api/library/physical/book`, {
-                          method: 'POST',
-                          headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ 
-                            title: showStockModal.title, 
-                            author: showStockModal.author, 
-                            category: showStockModal.category,
-                            copiesCount: stockQuantity 
-                          })
-                        });
+  // Reuse existing POST /book route which handles stock increments
+  try {
+    await backendApi.post('/api/library/physical/book', {
+      title: showStockModal.title, 
+      author: showStockModal.author, 
+      category: showStockModal.category,
+      copiesCount: stockQuantity 
+    });
                         triggerPopup(`Added ${stockQuantity} copies`, "success");
                         setShowStockModal(null);
                         fetchPhysicalData();
@@ -2399,10 +2177,7 @@ const DigitalLibrary = () => {
                       onClick={async () => {
                         // Loop delete for selected copies
                         for (const id of selectedCopiesToRemove) {
-                          await fetch(`${API_BASE}/api/library/physical/copy/${id}`, {
-                            method: 'DELETE',
-                            headers: { Authorization: `Bearer ${sessionToken}` }
-                          });
+                          await backendApi.delete(`/api/library/physical/copy/${id}`);
                         }
                         triggerPopup(`Removed ${selectedCopiesToRemove.length} copies`, "success");
                         setShowStockModal(null);

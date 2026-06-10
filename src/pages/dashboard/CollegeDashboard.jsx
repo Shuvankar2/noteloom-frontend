@@ -18,8 +18,7 @@ import ThemeToggle from '../../components/common/ThemeToggle';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import SessionExpiredPage from '../../components/common/SessionExpiredPage';
 import LoadingGif from '../../utils/LoadingMan.gif';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 const iconMap = {
   BookOpen, ClipboardList, MessageSquare, Users, Calendar, Banknote, IndianRupee, 
@@ -121,59 +120,57 @@ const CollegeDashboard = () => {
       if (!isSessionValid) return;
       try {
         // ✅ FIXED: Fetch from session/menu which respects IT Admin Toggles
-        const response = await fetch(`${API_BASE}/session/menu`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('sessionToken')}`,
-            'Content-Type': 'application/json'
+        // backendApi automatically injects the sessionToken!
+        const response = await backendApi.get('/session/menu');
+        const data = response.data;
+          
+        const lmsKeywords = [
+          'notes', 'assignments', 'exams', 'classroom', 'library', 'quiz', 'course', 'faculty', 
+          'attendance', 'notice', 'project', 'class', 'routine', 'timetable'
+        ];          
+        const lms = [];
+        const erp = [];
+
+        data.forEach(item => {
+          const key = item.key ? item.key.toLowerCase() : '';
+          const title = item.title ? item.title.toLowerCase() : '';
+
+          const matchesKeyword = lmsKeywords.some(keyword => 
+            key.includes(keyword) || title.includes(keyword)
+          );
+
+          // Explicit checks for common LMS items to ensure they go to the right section
+          const isRequestedLMSItem = 
+            key.includes('attendance') || 
+            title.includes('attendance') ||
+            key.includes('notice') || 
+            title.includes('notice') ||
+            key.includes('project') || 
+            title.includes('project') ||
+            key.includes('class') || 
+            title.includes('my classes') ||
+            key.includes('upload_content') ||
+            key.includes('question_bank');
+
+          if (item.category === 'LMS' || matchesKeyword || isRequestedLMSItem) {
+            lms.push(item);
+          } else {
+            erp.push(item);
           }
         });
+
+        // ❌ REMOVED: Manual injection block (It was bypassing the toggle logic)
+          
+        setLmsItems(lms);
+        setErpItems(erp);
         
-        if (response.ok) {
-          const data = await response.json();
-          
-          const lmsKeywords = [
-            'notes', 'assignments', 'exams', 'classroom', 'library', 'quiz', 'course', 'faculty', 
-            'attendance', 'notice', 'project', 'class', 'routine', 'timetable'
-          ];          
-          const lms = [];
-          const erp = [];
-
-          data.forEach(item => {
-            const key = item.key ? item.key.toLowerCase() : '';
-            const title = item.title ? item.title.toLowerCase() : '';
-
-            const matchesKeyword = lmsKeywords.some(keyword => 
-              key.includes(keyword) || title.includes(keyword)
-            );
-
-            // Explicit checks for common LMS items to ensure they go to the right section
-            const isRequestedLMSItem = 
-              key.includes('attendance') || 
-              title.includes('attendance') ||
-              key.includes('notice') || 
-              title.includes('notice') ||
-              key.includes('project') || 
-              title.includes('project') ||
-              key.includes('class') || 
-              title.includes('my classes') ||
-              key.includes('upload_content') ||
-              key.includes('question_bank');
-
-            if (item.category === 'LMS' || matchesKeyword || isRequestedLMSItem) {
-              lms.push(item);
-            } else {
-              erp.push(item);
-            }
-          });
-
-          // ❌ REMOVED: Manual injection block (It was bypassing the toggle logic)
-          
-          setLmsItems(lms);
-          setErpItems(erp);
-        }
-      } catch (error) { console.error("Error fetching menu:", error); } 
-      finally { setMenuLoading(false); }
+      } catch (error) { 
+        console.error("Error fetching menu:", error); 
+      } finally { 
+        setMenuLoading(false); 
+      }
     };
+    
     fetchMenu();
   }, [isSessionValid, profile]);
 

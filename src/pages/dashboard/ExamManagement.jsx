@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -16,8 +15,8 @@ import GlassHeader from '../../components/common/GlassHeader';
 import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import backendApi from '../../utils/backend-api';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
 
 const ExamManagement = () => {
   const navigate = useNavigate();
@@ -36,13 +35,11 @@ const ExamManagement = () => {
   const userRoleDisplay = profile?.role ? profile.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Admin';
 
   // --- 1. Fetch Data ---
+  // --- 1. Fetch Data ---
   const fetchData = async () => {
     setLoading(true);
     try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await axios.get(`${API_BASE}/api/coe/admin/exam-status`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await backendApi.get('/api/coe/admin/exam-status');
         
         if (res.data.session) {
             setSession(res.data.session);
@@ -69,14 +66,11 @@ const ExamManagement = () => {
       if (!confirm(`Are you sure you want to RESET the exam form for ${studentName}? The student will have to fill it again.`)) return;
       
       try {
-          const token = localStorage.getItem('sessionToken');
-          await axios.delete(`${API_BASE}/api/coe/admin/reset-form/${formId}`, {
-              headers: { Authorization: `Bearer ${token}` }
-          });
+          await backendApi.delete(`/api/coe/admin/reset-form/${formId}`);
           triggerPopup(`Form reset for ${studentName}`, "success");
           fetchData(); // Refresh list
       } catch (e) {
-          triggerPopup("Reset failed", "error");
+          triggerPopup(e.response?.data?.error || "Reset failed", "error");
       }
   };
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -20,7 +19,7 @@ import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 // Assets
 import LoadingGif from '../../utils/LoadingMan.gif';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../../utils/backend-api';
 
 /* =========================================================================
    1. CONSTANTS
@@ -323,10 +322,8 @@ const SemesterFeedback = () => {
     const fetchFeedbackData = async () => {
       if (!user) return;
       try {
-        const token = localStorage.getItem('sessionToken');
-        const res = await axios.get(`${API_BASE}/api/coe/student/feedback-data/${user.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        // backendApi automatically passes your token and base URL!
+        const res = await backendApi.get(`/api/coe/student/feedback-data/${user.id}`);
         
         setStudentProfile(res.data.profile);
         setAllSubjects(res.data.subjects);
