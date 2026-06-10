@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Server, AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 
 const EnvironmentBadge = () => {
     // 1. SILENT IN PRODUCTION
