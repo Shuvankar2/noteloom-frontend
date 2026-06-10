@@ -9,7 +9,7 @@ import {
 import { useTheme } from '../context/ThemeContext'; 
 import ModernPDFViewer from './ModernPDFViewer'; 
 import CustomVideoPlayer from './CustomVideoPlayer';
-import backendApi from '../../utils/backend-api';
+import backendApi from '../utils/backend-api';
 
 // Replace existing GlassHeader const
 const GlassHeader = ({ children, isDarker }) => (

@@ -14,7 +14,7 @@ const STARTING_URL = PREVIEW_API || PROD_API;
 const backendApi = axios.create({
     baseURL: STARTING_URL,
     withCredentials: true, // Mandatory for cross-origin cookies/sessions
-    timeout: 10000,        // Industry standard: prevent infinite hanging (10 seconds)
+    timeout: 25000,        // Industry standard: prevent infinite hanging (10 seconds)
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'

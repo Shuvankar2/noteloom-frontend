@@ -6,7 +6,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { useTheme } from '../context/ThemeContext';
 import mermaid from 'mermaid';
-import backendApi from '../../utils/backend-api';
+import backendApi from '../utils/backend-api';
 
 
 // --- SUB-COMPONENT: Mermaid Diagram Renderer (Dark Mode + Frosted Glass) ---
