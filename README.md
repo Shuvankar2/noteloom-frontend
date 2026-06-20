@@ -1,6 +1,6 @@
 # 🎓 Note Loom — College Management Platform
 
-**Note Loom** is a full-stack, multi-tenant college management platform that covers academics, examinations, attendance, library management, AI-powered study tools, and a complete internal IT administration panel — all under a single unified system.
+**Note Loom** is a multi-tenant college management platform that covers academics, examinations, attendance, library management, AI-powered study tools, and a complete internal IT administration panel — all under a single unified system.
 
 This is a Beta build it's prone to bugs and dosen't represents the final built.
 
