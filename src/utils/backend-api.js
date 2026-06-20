@@ -6,7 +6,8 @@ import axios from 'axios';
 // Vercel injects VITE_API_URL during the automated build pipeline.
 const PREVIEW_API = import.meta.env.VITE_API_URL;
 const PROD_API = 'https://noteloom-api.vercel.app'; 
-const STARTING_URL = PREVIEW_API || PROD_API;
+const RAW_URL = PREVIEW_API || PROD_API;
+const STARTING_URL = RAW_URL.replace(/\/$/, "");
 
 // ==========================================
 // 2. INITIALIZE THE MASTER CLIENT

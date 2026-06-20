@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
-
-// Adjust this if your config is elsewhere
-export const API_BASE = import.meta.env.VITE_API_URL || 'https://noteloom-api.vercel.app';
+import backendApi from '../utils/backend-api';
 
 export const useSessionManager = () => {
   const [isSessionValid, setIsSessionValid] = useState(true);
@@ -29,60 +27,44 @@ export const useSessionManager = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/session/info`, {
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-          'Content-Type': 'application/json'
-        }
+      // ✅ Now using your backendApi (headers are attached automatically!)
+      const response = await backendApi.get('/session/info');
+      const data = response.data;
+        
+      // ✅ FIXED DATA MAPPING: Capturing the correct fields from your database
+      setUser({
+        id: data.user?._id || data.user?.id,
+        email: data.user?.email,
+        name: data.user?.fullName || data.user?.name || 'Student',
+        uid: data.user?.uid || data.user?.rollNo || data.user?.employeeId || data.user?._id || 'N/A'
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          uid: data.user.uid
-        });
+      setProfile({
+        id: data.user?._id || data.user?.id,
+        role: data.role || data.user?.role,
+        college: data.user?.collegeName || data.collegeName || 'Unknown Institution',
+        full_name: data.user?.fullName || data.user?.name,
+      });
 
-        setProfile({
-          id: data.user.id,
-          role: data.role,
-          college: data.tenant.name,
-          full_name: data.user.name,
-        });
+      setIsSessionValid(true);
+      setLoading(false);
+      return true;
 
-        setIsSessionValid(true);
-        setLoading(false);
-        return true;
-      } else {
-  // ❌ Do NOT auto-clear session here (prevents race-condition logout)
-  setIsSessionValid(false);
-  setLoading(false);
-  return false;
-}
     } catch (error) {
       console.error('Session check failed:', error);
+      // ❌ Do NOT auto-clear session here (prevents race-condition logout)
+      setIsSessionValid(false);
       setLoading(false); 
       return false;
     }
   };
 
   const clearSession = async () => {
-    const sessionToken = localStorage.getItem('sessionToken');
-    if (sessionToken) {
-      try {
-        await fetch(`${API_BASE}/api/auth/signout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (error) {
-        console.error('Error signing out:', error);
-      }
+    try {
+      // ✅ Now using your backendApi
+      await backendApi.post('/api/auth/signout');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
     
     // Clear Session Data ONLY (Keep College Code)

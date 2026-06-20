@@ -24,7 +24,7 @@ useEffect(() => {
   try {
     setLoading(true);
     // Fetches from the dedicated public endpoint
-    const response = await backendApi.get('/api/auth/public/colleges');
+    const response = await backendApi.get('/it-auth/public/colleges');
     const data = response.data;
       
     // Map backend Tenant fields to your Card component requirements
