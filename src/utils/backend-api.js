@@ -53,13 +53,13 @@ backendApi.interceptors.response.use(
         const originalRequest = error.config;
 
         // --- AUTOMATED FALLBACK ROUTING ---
-        // If the Preview backend fails, reroute traffic to the Production backend instantly.
-        if (PREVIEW_API && originalRequest.baseURL === PREVIEW_API && !originalRequest._isFallbackRetry) {
+        // ✅ FIXED: Compare against STARTING_URL instead of PREVIEW_API
+        if (PREVIEW_API && originalRequest.baseURL === STARTING_URL && !originalRequest._isFallbackRetry) {
             originalRequest._isFallbackRetry = true;
             console.warn(`⚠️ [Network] Preview API failed. Rerouting to PROD: ${originalRequest.url}`);
             
             originalRequest.baseURL = PROD_API;
-            return backendApi(originalRequest); // Retry the exact same request on Prod
+            return backendApi(originalRequest); 
         }
 
         // --- GLOBAL ERROR AUTOMATION ---
