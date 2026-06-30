@@ -1,7 +1,7 @@
 // src/components/StandaloneViewer.jsx
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import ModernPDFViewer from './ModernPDFViewer';
+import ModernPDFViewer from '@/components/common/ModernPDFViewer';
 
 const StandaloneViewer = () => {
   const [searchParams] = useSearchParams();

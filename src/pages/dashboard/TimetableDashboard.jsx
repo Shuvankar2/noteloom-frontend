@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,14 +8,14 @@ import {
   Users, Building, Layers, Edit3, X, FileText, ArrowLeft, Wifi,
   MapPin, User, MoreHorizontal, Lock, AlertCircle // <--- ADDED Lock HERE
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
-import LoadingGif from '../../utils/LoadingMan.gif';
-import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
-import ThemeToggle from '../../components/common/ThemeToggle';
-import UserProfileDropdown from '../../components/common/UserProfileDropdown';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import LoadingGif from '@/utils/LoadingMan.gif';
+import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 // --- SUB-COMPONENT: Personal Calendar (Revamped Google-Cal Style) ---
 const PersonalCalendar = ({ theme, user }) => {

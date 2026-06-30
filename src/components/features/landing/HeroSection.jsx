@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowRight, GraduationCap, Shield, TrendingUp } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext.jsx";
 
 const HeroSection = ({ navigate }) => {
   const { isDarkMode } = useTheme();

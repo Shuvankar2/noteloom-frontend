@@ -8,7 +8,7 @@ import {
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import PdfAiSummarizer from './PdfAiSummarizer'; // Update path as needed
+import PdfAiSummarizer from '@/components/features/ai/PdfAiSummarizer'; // Update path as needed
 
 // 1. SILENCE BENIGN WARNINGS
 // const originalWarn = console.warn;

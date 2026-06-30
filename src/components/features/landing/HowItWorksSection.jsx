@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { BookOpen, Settings, Rocket } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext.jsx";
 
 const HowItWorksSection = () => {
   const { isDarkMode } = useTheme();

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -5,15 +6,15 @@ import {
   ArrowLeft, LogOut, User, Calendar, ClipboardList, 
   BookOpen, MoreVertical, Search, X, ChevronRight, Users, Mail, Fingerprint 
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
-import LOADER_GIF from '../../utils/LoadingMan.gif';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import LOADER_GIF from '@/utils/LoadingMan.gif';
 
-import UserProfileDropdown from '../../components/common/UserProfileDropdown'; 
-import ThemeToggle from '../../components/common/ThemeToggle';
-import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx'; 
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const getYearFromSemester = (sem) => {
   if (sem <= 2) return "1st Year";

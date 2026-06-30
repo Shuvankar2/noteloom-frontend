@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, CheckCircle, X, WifiOff, Info, Wifi } from 'lucide-react';
-import { useTheme } from './ThemeContext'; // Ensure this path is correct for your project
+import { useTheme } from '@/context/ThemeContext.jsx'; // Ensure this path is correct for your project
 
 const ErrorPopupContext = createContext();
 

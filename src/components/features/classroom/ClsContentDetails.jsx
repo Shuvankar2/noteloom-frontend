@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 // src/components/ClsContentDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
@@ -6,11 +7,11 @@ import {
   PlayCircle, FileImage, Lock, Unlock, CheckCircle, Circle, Loader2, Check
 } from 'lucide-react';
 
-import { useTheme } from '../context/ThemeContext'; 
-import ModernPDFViewer from './ModernPDFViewer'; 
-import CustomVideoPlayer from './CustomVideoPlayer';
+import { useTheme } from '@/context/ThemeContext.jsx'; 
+import ModernPDFViewer from '@/components/common/ModernPDFViewer'; 
+import CustomVideoPlayer from '@/components/common/CustomVideoPlayer';
 
-const API_BASE = 'https://noteloom-api.vercel.app'; 
+ 
 
 // Replace existing GlassHeader const
 const GlassHeader = ({ children, isDarker }) => (

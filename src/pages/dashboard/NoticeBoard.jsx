@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -5,10 +6,10 @@ import {
   ArrowLeft, Plus, Camera, Trash2, Edit, Heart, MessageSquare, 
   PlayCircle, FileText, Upload, X 
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const NoticeCard = ({ notice, currentUser, currentRole, refresh }) => {
   const { isDarkMode } = useTheme();

@@ -1,16 +1,17 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, ArrowLeft } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import { useITSessionManager } from '../../hooks/useITSessionManager';
-import GlassHeader from '../../components/common/GlassHeader';
-import ITDashboardFooter from '../../components/dashboard/ITDashboardFooter';
-import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
-import ThemeToggle from '../../components/common/ThemeToggle';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import { useITSessionManager } from '@/hooks/useITSessionManager.js';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import ITDashboardFooter from '@/components/features/dashboard/ITDashboardFooter.jsx';
+import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 
 // Define API_BASE or import it from your config
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const AddEditContentPage = () => {
   const { isDarkMode } = useTheme();

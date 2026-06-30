@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useReactToPrint } from 'react-to-print';
 import { useNavigate } from 'react-router-dom';
-import { LeaveReceipt } from './LeaveReceipt';
+import { LeaveReceipt } from '@/components/features/leave/LeaveReceipt.jsx';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { 
   CheckCircle, Printer, Send, Calendar, Clock, 
   ChevronRight, ArrowLeft, User 
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext'; 
+import { useTheme } from '@/context/ThemeContext.jsx'; 
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (
