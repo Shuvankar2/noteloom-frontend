@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from "react-router-dom";
-import { useTheme } from '@/context/ThemeContext.jsx';
+import { useTheme } from '../../context/ThemeContext';
 import { Youtube, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
 
 const Footer = () => {

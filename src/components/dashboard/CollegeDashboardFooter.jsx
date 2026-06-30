@@ -1,11 +1,11 @@
 import React from 'react';
-import { useTheme } from '@/context/ThemeContext.jsx';
+import { useTheme } from '../../context/ThemeContext';
 // Ensure you have extracted CollegeBannerLogo to common components
-import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx'; 
+import CollegeBannerLogo from '../common/CollegeBannerLogo'; 
 
 // You might need to move this config to a utils file (e.g., src/utils/config.js)
 // For now, I'm defining it here or import it if you moved it.
-import { COLLEGE_CONFIG } from '@/utils/config'; 
+import { COLLEGE_CONFIG } from '../../utils/config'; 
 
 const CollegeDashboardFooter = () => {
   const { isDarkMode } = useTheme();

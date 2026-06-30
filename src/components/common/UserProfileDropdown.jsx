@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useTheme } from "@/context/ThemeContext.jsx";
+import { useTheme } from "../../context/ThemeContext";
 import {
   User,
   Edit3,

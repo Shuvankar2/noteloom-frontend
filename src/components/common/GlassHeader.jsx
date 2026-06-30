@@ -1,4 +1,4 @@
-import { useTheme } from "@/context/ThemeContext.jsx";
+import { useTheme } from "../../context/ThemeContext";
 
 const GlassHeader = ({ children, variant = "default" }) => {
   const { isDarkMode } = useTheme();

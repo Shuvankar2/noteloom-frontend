@@ -1,15 +1,14 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Shield, Mail, Lock } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext.jsx";
-import GlassHeader from "@/components/common/GlassHeader.jsx";
-import ThemeToggle from "@/components/common/ThemeToggle.jsx";
-import Footer from "@/components/common/Footer.jsx";
+import { useTheme } from "../../context/ThemeContext";
+import GlassHeader from "../../components/common/GlassHeader";
+import ThemeToggle from "../../components/common/ThemeToggle";
+import Footer from "../../components/common/Footer";
 
 // Define API_BASE locally or import it from a config file if you have one
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 const ITLoginPage = () => {
   const { isDarkMode } = useTheme();

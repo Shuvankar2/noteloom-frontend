@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { WifiOff } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext.jsx';
+import { useTheme } from '../../context/ThemeContext';
 
 const SessionExpiredPage = ({ onLoginRedirect }) => {
   const { isDarkMode } = useTheme();

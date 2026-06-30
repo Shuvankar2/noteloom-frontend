@@ -1,15 +1,14 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, Search, MapPin, Star, School } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext.jsx";
-import GlassHeader from "@/components/common/GlassHeader.jsx";
-import ThemeToggle from "@/components/common/ThemeToggle.jsx";
-import Footer from "@/components/common/Footer.jsx";
-import LogoWithFallback from "@/components/common/LogoWithFallback.jsx"; 
+import { useTheme } from "../../context/ThemeContext";
+import GlassHeader from "../../components/common/GlassHeader";
+import ThemeToggle from "../../components/common/ThemeToggle";
+import Footer from "../../components/common/Footer";
+import LogoWithFallback from "../../components/common/LogoWithFallback"; 
 
 // Define API_BASE (Ensure this matches your backend URL)
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 const CollegeSelection = ({ navigate }) => {
   const { isDarkMode } = useTheme();

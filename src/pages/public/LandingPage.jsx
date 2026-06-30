@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { useTheme } from "@/context/ThemeContext.jsx";
-import LiquidGlassSVGFilter from "@/components/features/landing/LiquidGlassPanel.jsx";
-import LandingNavbar from "@/components/features/landing/LandingNavbar.jsx";
-import HeroSection from "@/components/features/landing/HeroSection.jsx";
-import TrustBar from "@/components/features/landing/TrustBar.jsx";
-import FeaturesSection from "@/components/features/landing/FeaturesSection.jsx";
-import ContactSection from "@/components/features/landing/ContactSection.jsx";
-import HowItWorksSection from "@/components/features/landing/HowItWorksSection.jsx";
-import Footer from "@/components/common/Footer.jsx";
+import { useTheme } from "../../context/ThemeContext";
+import LiquidGlassSVGFilter from "../../components/landing/LiquidGlassPanel";
+import LandingNavbar from "../../components/landing/LandingNavbar";
+import HeroSection from "../../components/landing/HeroSection";
+import TrustBar from "../../components/landing/TrustBar";
+import FeaturesSection from "../../components/landing/FeaturesSection";
+import ContactSection from "../../components/landing/ContactSection";
+import HowItWorksSection from "../../components/landing/HowItWorksSection";
+import Footer from "../../components/common/Footer";
 
 const LandingPage = ({ navigate }) => {
   const { isDarkMode } = useTheme();

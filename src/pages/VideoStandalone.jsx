@@ -1,7 +1,7 @@
 // src/pages/VideoStandalone.jsx
 import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import CustomVideoPlayer from '@/components/common/CustomVideoPlayer';
+import CustomVideoPlayer from '../components/CustomVideoPlayer';
 
 const VideoStandalone = () => {
   const [searchParams] = useSearchParams();

@@ -1,10 +1,9 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, AlertCircle, Download, FileText, DollarSign } from 'lucide-react';
-import { useSessionManager } from '@/hooks/useSessionManager.js';
+import { useSessionManager } from '../../hooks/useSessionManager';
 
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 const StudentExamPortal = () => {
   const { user, profile } = useSessionManager();

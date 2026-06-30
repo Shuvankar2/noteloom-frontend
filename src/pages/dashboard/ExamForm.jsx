@@ -1,4 +1,3 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,18 +10,18 @@ import {
 } from "lucide-react";
 
 // Common Components
-import { useTheme } from '@/context/ThemeContext.jsx';
-import { useSessionManager } from '@/hooks/useSessionManager.js';
-import { useErrorPopup } from '@/context/ErrorPopupContext.jsx'; 
-import GlassHeader from '@/components/common/GlassHeader.jsx';
-import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
-import ThemeToggle from '@/components/common/ThemeToggle.jsx';
-import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
+import { useTheme } from '../../context/ThemeContext';
+import { useSessionManager } from '../../hooks/useSessionManager';
+import { useErrorPopup } from '../../context/ErrorPopupContext'; 
+import GlassHeader from '../../components/common/GlassHeader';
+import UserProfileDropdown from '../../components/common/UserProfileDropdown';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 
 // Assets
-import LoadingGif from '@/utils/LoadingMan.gif';
+import LoadingGif from '../../utils/LoadingMan.gif';
 
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 // =========================================================
 // 1. SUB-COMPONENTS FOR FORM FILLING

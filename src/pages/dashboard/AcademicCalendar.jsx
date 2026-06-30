@@ -7,12 +7,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 // Common Components
-import { useTheme } from '@/context/ThemeContext.jsx';
-import { useSessionManager } from '@/hooks/useSessionManager.js';
-import GlassHeader from '@/components/common/GlassHeader.jsx';
-import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
-import ThemeToggle from '@/components/common/ThemeToggle.jsx';
-import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
+import { useTheme } from '../../context/ThemeContext';
+import { useSessionManager } from '../../hooks/useSessionManager';
+import GlassHeader from '../../components/common/GlassHeader';
+import UserProfileDropdown from '../../components/common/UserProfileDropdown';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
 
 /* =========================================================================
    1. MOCK DATA & CONSTANTS
