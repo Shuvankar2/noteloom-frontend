@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '@/context/ThemeContext.jsx';
 import { Calendar, Clock } from "lucide-react";
 
 const ITDashboardFooter = () => {

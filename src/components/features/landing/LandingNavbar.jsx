@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import ThemeToggle from "../common/ThemeToggle";
-import { useTheme } from "../../context/ThemeContext";
+import ThemeToggle from "@/components/common/ThemeToggle.jsx";
+import { useTheme } from "@/context/ThemeContext.jsx";
 
 const LandingNavbar = ({ navigate }) => {
   const { isDarkMode } = useTheme();

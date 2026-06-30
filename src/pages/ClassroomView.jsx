@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 // src/pages/ClassroomView.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
@@ -7,10 +8,10 @@ import {
   Upload, Eye, Play, FolderKanban, X, CheckCircle, Circle, CloudOff, Download, Check, Plus, FolderPlus 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext'; 
-// import NoteloomAi from '../components/NoteloomAi';
+import { useTheme } from '@/context/ThemeContext.jsx'; 
+// import NoteloomAi from '@/components/features/ai/NoteloomAi';
 
-const API_BASE = 'https://noteloom-api.vercel.app'; 
+ 
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 // Replace existing GlassHeader const

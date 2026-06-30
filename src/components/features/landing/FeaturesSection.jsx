@@ -1,8 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Shield, CheckSquare, Library, TrendingUp, MessageSquare, ArrowRight, GraduationCap } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
-import FeatureCard from "./FeatureCard";
+import { useTheme } from "@/context/ThemeContext.jsx";
+import FeatureCard from "@/components/features/landing/FeatureCard.jsx";
 
 const FeaturesSection = ({ activeCardIndex, setActiveCardIndex }) => {
   const { isDarkMode } = useTheme();

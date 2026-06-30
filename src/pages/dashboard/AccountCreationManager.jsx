@@ -1,12 +1,13 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
 
 // Define API_BASE or import it from your config
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const AccountCreationManager = () => {
   const { isDarkMode } = useTheme();

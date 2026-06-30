@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { 
@@ -5,16 +6,16 @@ import {
   Calendar, Users, Layers, ChevronRight, Wifi, 
   CheckCircle, AlertCircle, X, Lock, Unlock, Save, Edit2, AlertTriangle, Search, UserMinus, UserPlus, BookOpen
 } from "lucide-react";
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import UserProfileDropdown from '../../components/common/UserProfileDropdown'; 
-import ThemeToggle from '../../components/common/ThemeToggle';
-import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx'; 
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
-import LOADER_GIF from '../../utils/LoadingMan.gif'; 
+
+import LOADER_GIF from '@/utils/LoadingMan.gif'; 
 
 // Animation Variants
 const pageVariants = {

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,17 +10,17 @@ import {
   Building, FileCog, Circle, ArrowRight, Layout, Database, Sparkles,
   Library, 
 } from "lucide-react";
-import { useTheme } from '../../context/ThemeContext';
-import { useSessionManager } from '../../hooks/useSessionManager';
-import GlassHeader from '../../components/common/GlassHeader';
-import CollegeDashboardFooter from '../../components/dashboard/CollegeDashboardFooter';
-import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
-import ThemeToggle from '../../components/common/ThemeToggle';
-import UserProfileDropdown from '../../components/common/UserProfileDropdown';
-import SessionExpiredPage from '../../components/common/SessionExpiredPage';
-import LoadingGif from '../../utils/LoadingMan.gif';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import { useSessionManager } from '@/hooks/useSessionManager.js';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import CollegeDashboardFooter from '@/components/features/dashboard/CollegeDashboardFooter.jsx';
+import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
+import SessionExpiredPage from '@/components/common/SessionExpiredPage.jsx';
+import LoadingGif from '@/utils/LoadingMan.gif';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const iconMap = {
   BookOpen, ClipboardList, MessageSquare, Users, Calendar, Banknote, IndianRupee, 

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,14 +8,14 @@ import {
   X, Phone, CheckCircle, AlertCircle, ChevronRight,
   Database, FileText, Calendar, Settings, BookOpen
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
-import ThemeToggle from '../../components/common/ThemeToggle';
-import LogoWithFallback from '../../components/common/LogoWithFallback';
-import CollegeMismatchWarning from '../auth/CollegeMismatchWarning';
-import { useErrorPopup } from '../../context/ErrorPopupContext';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import LogoWithFallback from '@/components/common/LogoWithFallback.jsx';
+import CollegeMismatchWarning from '@/pages/auth/CollegeMismatchWarning.jsx';
+import { useErrorPopup } from '@/context/ErrorPopupContext.jsx';
 
-const API_BASE = 'https://noteloom-api.vercel.app';
+
 
 const LoginPage = () => {
   const [selectedCollege, setSelectedCollege] = useState('');

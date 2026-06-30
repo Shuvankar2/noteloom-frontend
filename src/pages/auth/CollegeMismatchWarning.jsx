@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
-import ThemeToggle from '../../components/common/ThemeToggle';
-import SessionExpiredPage from '../../components/common/SessionExpiredPage';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
+import ThemeToggle from '@/components/common/ThemeToggle.jsx';
+import SessionExpiredPage from '@/components/common/SessionExpiredPage.jsx';
 
 const CollegeMismatchWarning = ({ userCollege, currentCollege, onDeleteAccount, onCancel }) => {
   const { isDarkMode } = useTheme();

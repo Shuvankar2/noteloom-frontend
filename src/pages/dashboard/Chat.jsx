@@ -6,8 +6,8 @@ import {
   Smile, Mic, CheckCheck, Users, Siren, UserCheck, 
   Microscope, Gavel, Hash, FileText, ChevronDown
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
-import GlassHeader from '../../components/common/GlassHeader';
+import { useTheme } from '@/context/ThemeContext.jsx';
+import GlassHeader from '@/components/common/GlassHeader.jsx';
 
 // --- MOCK CHANNELS ---
 const INITIAL_CHANNELS = [
