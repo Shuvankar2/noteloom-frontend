@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Shield, Users, Mail, Phone, Calendar } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext.jsx";
-import { useErrorPopup } from "@/context/ErrorPopupContext.jsx";
-import FAQItem from "@/components/features/landing/FAQItem.jsx";
+import { useTheme } from "../../context/ThemeContext";
+import { useErrorPopup } from "../../context/ErrorPopupContext";
+import FAQItem from "./FAQItem";
 
 const ContactSection = () => {
   const { isDarkMode } = useTheme();

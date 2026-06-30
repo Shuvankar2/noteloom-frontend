@@ -1,4 +1,3 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,14 +10,14 @@ import {
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-import { useTheme } from '@/context/ThemeContext.jsx';
-import GlassHeader from '@/components/common/GlassHeader.jsx';
-import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
-import ThemeToggle from '@/components/common/ThemeToggle.jsx';
-import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
-import AttendanceToggle from '@/components/common/AttendanceToggle.jsx'; // Importing the new toggle
+import { useTheme } from '../../context/ThemeContext';
+import GlassHeader from '../../components/common/GlassHeader';
+import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import UserProfileDropdown from '../../components/common/UserProfileDropdown';
+import AttendanceToggle from '../../components/common/AttendanceToggle'; // Importing the new toggle
 
- 
+const API_BASE = 'https://noteloom-api.vercel.app'; 
 
 const MarkAttendance = () => {
   const navigate = useNavigate();

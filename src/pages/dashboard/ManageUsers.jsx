@@ -1,11 +1,10 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search, AlertCircle, Edit, Trash2 } from "lucide-react";
-import { useTheme } from '@/context/ThemeContext.jsx';
-import GlassHeader from '@/components/common/GlassHeader.jsx';
+import { useTheme } from '../../context/ThemeContext';
+import GlassHeader from '../../components/common/GlassHeader';
 
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 const UserManagementCard = ({ user, onToggle, onDelete }) => {
   const { isDarkMode } = useTheme();

@@ -1,4 +1,3 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,13 +6,13 @@ import {
   PieChart, TrendingUp, AlertCircle, BookOpen, User, Filter
 } from 'lucide-react';
 
-import { useTheme } from '@/context/ThemeContext.jsx';
-import GlassHeader from '@/components/common/GlassHeader.jsx';
-import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
-import ThemeToggle from '@/components/common/ThemeToggle.jsx';
-import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
+import { useTheme } from '../../context/ThemeContext';
+import GlassHeader from '../../components/common/GlassHeader';
+import CollegeBannerLogo from '../../components/common/CollegeBannerLogo';
+import ThemeToggle from '../../components/common/ThemeToggle';
+import UserProfileDropdown from '../../components/common/UserProfileDropdown';
 
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 const Attendance = () => {
   const navigate = useNavigate();

@@ -1,14 +1,13 @@
-import { API_BASE } from '@/utils/config';
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { 
   MessageSquare, X, Send, FileText, Video, Sparkles, Bot, Loader2, Camera, Brain, GraduationCap, Download, ZoomIn, Settings2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useTheme } from '@/context/ThemeContext.jsx';
+import { useTheme } from '../context/ThemeContext';
 import mermaid from 'mermaid';
 
-
+const API_BASE = 'https://noteloom-api.vercel.app';
 
 
 // --- SUB-COMPONENT: Mermaid Diagram Renderer (Dark Mode + Frosted Glass) ---

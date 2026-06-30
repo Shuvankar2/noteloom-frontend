@@ -3,7 +3,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Check, X, Scan, User, Briefcase, Calendar, ArrowLeft } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext.jsx'; 
+import { useTheme } from '../../context/ThemeContext'; 
 
 // --- INTERNAL COMPONENT: GlassHeader ---
 const GlassHeader = ({ children, isDarker }) => (

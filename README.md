@@ -59,6 +59,8 @@ The platform has **three user-facing portals**:
 | **React QR Code** | QR code generation |
 | **React Barcode** | Barcode generation |
 | **date-fns** | Date formatting utilities |
+| **Supabase JS** | Storage (profile pictures) |
+| **Firebase** | Additional cloud services |
 
 ### Backend
 | Technology | Purpose |
@@ -112,46 +114,40 @@ Express REST API (Node.js) ── port 4000
 
 ## 📁 Directory Structure
 
-The frontend utilizes a modular, feature-based layout leveraging Vite path aliases (`@/`) for clean, absolute-style imports.
-
 ```
-noteloom-frontend/
-├── vite.config.js              # Vite bundler config with path alias resolver
-├── jsconfig.json               # IDE autocomplete helper mapping @/* -> src/*
-├── .gitignore                  # Git exclusions (dist, node_modules, .env local logs)
-├── .env                        # Local development variables (defines default API port)
+iem-notes-fullstack/
+├── src/                        # React frontend
+│   ├── App.jsx                 # Monolithic main component (~360KB)
+│   ├── main.jsx                # React entry point
+│   ├── index.css               # Global styles
+│   ├── components/             # Shared UI components
+│   ├── context/                # React context providers
+│   ├── hooks/                  # Custom React hooks
+│   ├── pages/                  # Page-level components
+│   └── utils/                  # Frontend utility functions
 │
-├── 📁 src/
-│   ├── App.jsx                 # Optimized core router file (~70KB)
-│   ├── main.jsx                # React bootstrapper
-│   ├── index.css               # Global styles & Tailwind CSS rules
-│   │
-│   ├── 📁 context/             # React Context Providers (Theme and Error Popups)
-│   │   ├── ThemeContext.jsx
-│   │   └── ErrorPopupContext.jsx
-│   │
-│   ├── 📁 hooks/               # Custom React lifecycle hooks
-│   │   ├── useSessionManager.js
-│   │   └── useITSessionManager.js
-│   │
-│   ├── 📁 utils/               # App configs and general utilities
-│   │   └── config.js           # API Base URL and logo configs
-│   │
-│   ├── 📁 pages/               # Screen components mapped directly to routes
-│   │   ├── 📁 public/          # Public landing/info page
-│   │   ├── 📁 auth/            # Signin, signup, tenant/college selection screens
-│   │   ├── 📁 admin/           # IT Admin dashboard and configs manager
-│   │   └── 📁 dashboard/       # Main College dashboard sub-pages (Academics, Marks, Library)
-│   │
-│   └── 📁 components/          # React widgets and UI chunks
-│       ├── 📁 common/          # Global layout parts (Footer, Video Player, PDF Viewer)
-│       └── 📁 features/        # Complex components grouped by logical module
-│           ├── 📁 coe/         # Controller of Exams (question bank, portals)
-│           ├── 📁 leave/       # Faculty leaves handling
-│           ├── 📁 ai/          # AI Chat and summary panels
-│           ├── 📁 landing/     # Landing page marketing components
-│           ├── 📁 dashboard/   # Dashboard structure layouts
-│           └── 📁 classroom/   # LMS and virtual classrooms
+├── backend/
+│   ├── server.js               # Express app entry point
+│   ├── config/
+│   │   ├── db.js               # MongoDB Atlas connection
+│   │   ├── masterFeatures.js   # Feature flags per role
+│   │   └── systemRoles.js      # Role definitions
+│   ├── routes/                 # 16 route files (one per domain)
+│   ├── models/                 # 33 Mongoose schemas
+│   ├── middleware/
+│   │   └── authMiddleware.js   # Session validation (tenant & IT)
+│   ├── services/
+│   │   └── LocalOCR.js         # Tesseract.js wrapper
+│   ├── utils/
+│   │   └── userDTO.js          # Data Transfer Object for users
+│   ├── scripts/
+│   │   └── seed.js             # Database seeder
+│   └── .env                    # Backend environment variables
+│
+├── webdata/                    # Static file storage (uploads, videos)
+├── temp/                       # Temporary files for AI processing
+├── package.json                # Frontend dependencies (Vite)
+└── vite.config.js              # Vite configuration
 ```
 
 ---
@@ -345,7 +341,7 @@ Health check and system-level endpoints.
 
 ## 🤖 AI Feature — Deep Dive
 
-The AI system uses a **primary + fallback dual-AI strategy**.
+The AI system is in `backend/routes/aiRoutes.js`. It uses a **primary + fallback dual-AI strategy**.
 
 ### Primary AI: Google Gemini 2.5 Flash Lite
 - Configured via `GEMINI_API_KEY`
@@ -408,7 +404,7 @@ What type?
 ---
 
 ### Endpoint 3: `POST /api/ai/transcribe-local-video` — Lecture Video AI
-Resource-heavy analysis of locally stored classroom video files.
+Analyzes locally stored classroom video files.
 
 **Strategy:**
 ```
@@ -426,17 +422,28 @@ STRATEGY A: Upload to Gemini File API
             └── Has transcript? → Send to Cloudflare Llama 3 to summarize
 ```
 
+### Local OCR Service (`services/LocalOCR.js`)
+A thin wrapper around **Tesseract.js** that:
+- Accepts an image buffer
+- Runs English OCR locally (no external API)
+- Used as a last-resort fallback when cloud AI is unavailable
+
 ---
 
 ## 🖥 Frontend Overview
 
-The frontend is an optimized **React SPA** served by Vite. 
+The frontend is a **React SPA** served by Vite. The main file is `src/App.jsx` — a large monolithic component that handles routing and all major page rendering.
 
-### Key Design Enhancements:
-*   **Decoupled Architecture:** Reorganized components into a modular feature-based folder structure under `src/components/features/` (e.g. `coe`, `leave`, `ai`, `landing`, `dashboard`).
-*   **Path Aliasing (`@/`):** Configurations set up in `vite.config.js` and `jsconfig.json` resolve the `@/` prefix to the `src/` root, facilitating robust imports.
-*   **App.jsx Slimdown:** The monolithic `App.jsx` file was audited, removing 6,042 lines of dead/commented-out legacy code, shrinking it from ~366KB down to ~70KB.
-*   **Dual-Portal and Session:** Integrates dynamic college configuration, custom PDF reporting (jsPDF), video processing (react-player), and offline markdown mindmap layouts (mermaid).
+### Key Frontend Capabilities:
+- **Multi-portal routing** — College portal vs IT portal vs public landing/login pages
+- **Session persistence** — `localStorage` for session token; auto-verifies on reload
+- **Role-based UI** — Dashboard features toggled based on role + SystemConfig from backend
+- **AI Chat Panel** — Floating assistant with chat history, file upload, mindmap rendering
+- **PDF Generation** — jsPDF for admit cards, fee receipts, reports
+- **QR/Barcode** — Library book cards with QR codes and barcodes
+- **Video Player** — react-player for streaming classroom videos
+- **In-browser PDF viewer** — react-pdf for document preview
+- **Mermaid rendering** — Dynamic mind map diagrams from AI output
 
 ---
 
@@ -468,6 +475,7 @@ The frontend is an optimized **React SPA** served by Vite.
 | `ExamResult` | Marks per student per subject |
 | `QuestionBank` | Uploaded question papers (file) |
 | `StudentSubjectMap` | Subject allocation per student per semester |
+| `COE_Extended` | Extended exam data models |
 | `Notice` | Notice board entries |
 | `LeaveApplication` | Faculty leave requests |
 | `Library (3 models)` | `LibraryCredential`, `DigitalResource`, `PhysicalBook` |
@@ -478,26 +486,98 @@ The frontend is an optimized **React SPA** served by Vite.
 
 ---
 
-## 🚀 Running the Project Locally
+## 🔌 API Reference Summary
 
-### 1. Configure the API Connection
-Create a `.env` file in the frontend root and set the target backend API endpoint:
-```env
-VITE_API_BASE=http://localhost:4000
+| Prefix | Module |
+|---|---|
+| `GET /health` | Health check |
+| `/api/auth/*` | Authentication (signup, signin, OTP, signout) |
+| `/api/ai/*` | AI chat, file summarize, video transcribe |
+| `/api/departments/*` | Department CRUD |
+| `/api/classrooms/*` | Classroom management |
+| `/api/batches/*` | Batch management |
+| `/api/notices/*` | Notice board |
+| `/api/coe/*` | Exam sessions, forms, results, question bank |
+| `/api/leave/*` | Faculty leave applications |
+| `/api/library/*` | Digital + Physical library |
+| `/api/attendance/*` | Attendance marking and reports |
+| `/api/modules, /api/content` | LMS (via lmsRoutes) |
+| `/api/college-admin/*` | College admin panel |
+| `/it-admin/*` | IT admin panel (colleges, features, users) |
+| `/it-auth/*` | IT authentication |
+| `/session/*` | Session data lookup |
+| `/webdata/*` | Static file serving (uploads) |
+
+---
+
+## 🚀 Project Details
+
+### Prerequisites
+- Node.js 18+
+- MongoDB Atlas account (or local MongoDB)
+- Google Gemini API key
+- Gmail account with App Password enabled
+
+
+## 🔗 How Everything Connects
+
+```
+USER LOGS IN
+    │ POST /api/auth/signin  (email + password + collegeCode)
+    ▼
+Backend: Finds User → Finds Tenant → Validates Membership → Creates Session
+    │ Returns: sessionToken (JWT)
+    ▼
+FRONTEND stores sessionToken in localStorage
+
+EVERY API REQUEST
+    │ Header: Authorization: Bearer <sessionToken>
+    ▼
+setTenantContext middleware:
+    Session.findOne(token) → populate User + Tenant → find Membership
+    → injects req.user, req.tenant, req.role into every route handler
+    ▼
+Route handler runs DB query SCOPED to req.tenant.id
+    → Only returns data belonging to that college
+    ▼
+Response sent to React frontend
+    → UI renders based on req.role (student / faculty / college_admin)
+
+AI FEATURE FLOW
+    │ User uploads file or types message
+    ▼
+POST /api/ai/summarize-file OR /api/ai/chat
+    → Try Google Gemini (primary)
+    → If fails (429, 503, quota) → Try Cloudflare Workers AI (fallback)
+    → If image/PDF is scanned → Tesseract.js local OCR (last resort)
+    → If video lecture → FFmpeg audio extraction → Whisper transcription → Llama 3 summary
+    ▼
+Response streamed back to React → Markdown rendered → Mermaid diagram rendered if mindmap
 ```
 
-### 2. Boot the Development Server
-Install dependencies and run:
-```bash
-npm install
-npm run dev
-```
-Open the link outputted in your terminal (typically `http://localhost:5173`) in your web browser.
+---
+
+## 📋 Key Design Decisions
+
+| Decision | Reasoning |
+|---|---|
+| **Session in DB (not stateless JWT only)** | Allows instant session invalidation (logout, suspension) without waiting for JWT expiry |
+| **Dual AI strategy (Gemini + Cloudflare)** | Ensures 99%+ uptime for AI features even during Gemini rate limits or outages |
+| **Local Tesseract OCR** | Zero-cost fallback for scanned documents; no third-party API dependency |
+| **25-page OCR limit** | Prevents memory exhaustion and extreme processing times on the server |
+| **Embedded `issuedTo` in PhysicalBook copies** | Avoids expensive joins on every book lookup; snapshot-style data at time of issue |
+| **`masterFeatures.js` + `SystemConfig`** | Decouples feature list (code) from feature activation (database), allowing IT to toggle features without code deploys |
+| **Incremental college codes (1001, 1002...)** | Predictable, human-readable IDs for college identification instead of random numbers |
+| **`setInterval` cleanup jobs** | Prevents database bloat from expired OTPs and soft-deleted records without a separate job scheduler |
 
 ---
 
 ## 👤 Author
 
-**Shuvankar**  
-Project: Note Loom - Beta  
-Version: `V1.1.0` (Architectural Refactoring Update)
+**Shuvankar**
+Project: Note Loom - Beta
+Version: `V1.0.43`
+
+---
+
+Generated at: 2026-05-27T22:57:01.112752 UTC
