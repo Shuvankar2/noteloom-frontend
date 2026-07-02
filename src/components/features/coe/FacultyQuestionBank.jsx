@@ -1,3 +1,4 @@
+
 import { API_BASE } from '@/utils/config';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -7,24 +8,20 @@ import {
   ChevronRight, ArrowLeft, Wifi, Layers, GraduationCap,
   CheckCircle, Filter, Eye, Download, File
 } from 'lucide-react';
-
-// Common Components
 import { useTheme } from '@/context/ThemeContext.jsx';
 import { useSessionManager } from '@/hooks/useSessionManager.js';
 import GlassHeader from '@/components/common/GlassHeader.jsx';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
 import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
-import LoadingGif from '@/utils/LoadingMan.gif'; 
 import ModernPdfViewer from '@/components/common/ModernPDFViewer';
-
-
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const FacultyQuestionBank = () => {
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
   const { user, profile } = useSessionManager();
-  
+
   // Data State
   const [departments, setDepartments] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -376,15 +373,9 @@ const FacultyQuestionBank = () => {
              </div>
 
              {loading ? (
-               <div className="text-center py-20">
-                   <img src={LoadingGif} alt="Loading..." className="w-24 h-24 mx-auto object-contain mb-4" />
-                   <p className="opacity-50 font-medium text-blue-500">Fetching Data...</p>
-               </div>
-             ) : questions.length === 0 ? (
-               <div className={`text-center py-20 rounded-2xl border border-dashed ${isDarkMode ? 'border-slate-700 bg-slate-900/50' : 'border-slate-300 bg-white/50'}`}>
-                  <FileText className={`w-16 h-16 mx-auto mb-4 ${theme.subText} opacity-40`}/>
-                  <p className={`font-medium ${theme.subText}`}>No questions found in the repository.</p>
-               </div>
+                <div className="text-center py-20">
+                   <LoadingSpinner />
+                </div>
              ) : (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                  {questions.map((q) => {

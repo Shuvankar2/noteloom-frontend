@@ -15,7 +15,7 @@ import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 
 
-import LOADER_GIF from '@/utils/LoadingMan.gif'; 
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 // Animation Variants
 const pageVariants = {
@@ -530,9 +530,7 @@ const ManageDepartments = () => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm"
           >
-            <div className="bg-transparent p-4 rounded-full">
-              <img src={LOADER_GIF} alt="Loading..." className="w-16 h-16 object-contain" /> 
-            </div>
+            <LoadingSpinner message="Please wait..." />
           </motion.div>
         )}
       </AnimatePresence>

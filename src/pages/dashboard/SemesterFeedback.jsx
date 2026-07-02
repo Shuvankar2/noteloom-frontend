@@ -19,7 +19,7 @@ import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 
 // Assets
-import LoadingGif from '@/utils/LoadingMan.gif';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 
 
@@ -404,9 +404,8 @@ const SemesterFeedback = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col items-center justify-center`}>
-        <img src={LoadingGif} alt="Loading..." className="opacity-80" />
-        <p className={`mt-4 font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading Profile & Subjects...</p>
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+        <LoadingSpinner message="Loading Profile & Subjects..." />
       </div>
     );
   }

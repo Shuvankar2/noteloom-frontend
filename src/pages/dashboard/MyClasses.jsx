@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import GlassHeader from '@/components/common/GlassHeader.jsx';
-import LOADER_GIF from '@/utils/LoadingMan.gif';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx'; 
 import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
@@ -329,9 +329,8 @@ const MyClasses = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8 pt-24">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-             <img src={LOADER_GIF} alt="Loading..." className="w-24 h-24 mb-4 object-contain" />
-             <p className="opacity-50 text-sm animate-pulse">Loading classrooms...</p>
+          <div className="flex items-center justify-center py-20">
+             <LoadingSpinner message="Loading classrooms..." />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

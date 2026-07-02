@@ -1,6 +1,7 @@
 import { API_BASE } from '@/utils/config';
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { 
   MessageSquare, X, Send, FileText, Video, Sparkles, Bot, Loader2, Camera, Brain, GraduationCap, Download, ZoomIn, Settings2
 } from 'lucide-react';
@@ -24,7 +25,7 @@ const MermaidDiagram = ({ code }) => {
       mermaid.initialize({ 
         startOnLoad: false,
         theme: isDarkMode ? 'dark' : 'default', // ✅ Auto-switch Diagram Theme
-        securityLevel: 'loose',
+        securityLevel: 'strict',
         fontFamily: 'sans-serif',
         darkMode: isDarkMode // Explicit flag for newer Mermaid versions
       });
@@ -42,8 +43,14 @@ const MermaidDiagram = ({ code }) => {
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
         
         // Rerender specifically when dark mode changes to update chart colors
-        const { svg } = await mermaid.render(id, cleanCode);
-        setSvg(svg);
+        const { svg: rawSvg } = await mermaid.render(id, cleanCode);
+        
+        // Sanitize the SVG content to strip any script tags or handlers
+        const cleanSvg = DOMPurify.sanitize(rawSvg, {
+          USE_PROFILES: { html: false, svg: true }
+        });
+        
+        setSvg(cleanSvg);
       } catch (err) {
         console.error("Mermaid Render Error:", err);
         setError("Invalid Diagram Syntax");

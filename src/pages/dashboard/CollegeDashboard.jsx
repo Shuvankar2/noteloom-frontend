@@ -18,7 +18,7 @@ import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
 import SessionExpiredPage from '@/components/common/SessionExpiredPage.jsx';
-import LoadingGif from '@/utils/LoadingMan.gif';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 
 
@@ -204,20 +204,10 @@ const CollegeDashboard = () => {
 // Loading State (Custom GIF & Theme)
   if (loading || menuLoading) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center transition-colors duration-300 ${
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
         isDarkMode ? 'bg-gray-900' : 'bg-[#f3f4f6]'
       }`}>
-        {/* Loading GIF */}
-        <img 
-          src={LoadingGif} 
-          alt="Loading..." 
-          className="w-24 h-24 mb-4 object-contain" 
-        />
-        <h2 className={`text-lg font-medium animate-pulse ${
-           isDarkMode ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          Hang On, Loading...
-        </h2>
+        <LoadingSpinner message="Hang On, Loading..." />
       </div>
     );
   }

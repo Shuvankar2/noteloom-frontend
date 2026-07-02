@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext.jsx';
 import GlassHeader from '@/components/common/GlassHeader.jsx';
-import LoadingGif from '@/utils/LoadingMan.gif';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CollegeBannerLogo from '@/components/common/CollegeBannerLogo.jsx';
 import ThemeToggle from '@/components/common/ThemeToggle.jsx';
 import UserProfileDropdown from '@/components/common/UserProfileDropdown.jsx';
@@ -891,11 +891,16 @@ const TimetableDashboard = () => {
   
     if(loading) return (
       <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-[#0f111a]' : 'bg-gray-50'}`}>
-          <img src={LoadingGif} alt="Loading..." className="w-24 h-24 object-contain"/>
+          <LoadingSpinner message="Loading your timetable..." />
       </div>
     );
   
-    const role = sessionData?.role;
+    if (!sessionData || !sessionData.user) {
+      navigate("/login", { replace: true });
+      return null;
+    }
+
+    const role = sessionData.role;
   
     // Define tabs based on role
     const tabs = [

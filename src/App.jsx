@@ -1,7 +1,7 @@
 import { API_BASE } from '@/utils/config';
 // COMPLETE WORKING App.jsx - Individual Students + Remove Book Icon
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LogIn,
@@ -59,89 +59,89 @@ import {
   Circle,
   PlayCircle,
   Plus,
-  // ADD THESE AFTER Plus,
-Camera,
-Eye,
-EyeOff,
-ArrowRight,
-X,
-Building,
-UserCheck,
-ShieldCheck,
-Library,
-Receipt,
-Banknote,
-IndianRupee,
-FolderPlus,
-Kanban,
-ListTodo as ListTodoIcon,
-FolderKanban,
-FileCog,
-Video,
-Laptop,
-MoreVertical, Volume2, Minimize, Maximize, Briefcase
+  Camera,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  X,
+  Building,
+  UserCheck,
+  ShieldCheck,
+  Library,
+  Receipt,
+  Banknote,
+  IndianRupee,
+  FolderPlus,
+  Kanban,
+  ListTodo as ListTodoIcon,
+  FolderKanban,
+  FileCog,
+  Video,
+  Laptop,
+  MoreVertical, Volume2, Minimize, Maximize, Briefcase
 
 } from "lucide-react";
 import { Routes, Route, useNavigate, useLocation, Link, useParams } from "react-router-dom";
 import { ThemeProvider, useTheme } from '@/context/ThemeContext.jsx';
-import ReactPlayer from 'react-player';
-import ClsContentDetails from '@/components/features/classroom/ClsContentDetails';
-import StandaloneViewer from '@/components/features/classroom/StandaloneViewer';
 import CustomVideoPlayer from '@/components/common/CustomVideoPlayer';
-import ClassroomView from '@/pages/ClassroomView.jsx';
-import VideoStandalone from '@/pages/VideoStandalone.jsx';
 import NoteloomAi from '@/components/features/ai/NoteloomAi';
-import FacultyLeave from '@/components/features/leave/FacultyLeave.jsx';
-import AdminLeaveManager from '@/components/features/leave/AdminLeaveManager.jsx';
 import axios from 'axios';
-
-// --- Pages ---
-// Auth & Public
 import { ErrorPopupProvider } from '@/context/ErrorPopupContext.jsx';
-import LandingPage from '@/pages/public/LandingPage.jsx';
-import CollegeSelection from '@/pages/auth/CollegeSelection.jsx';
-import LoginPage from '@/pages/auth/LoginPage.jsx';
-import ITLoginPage from '@/pages/auth/ITLoginPage.jsx';
-import TimetableDashboard from "@/pages/dashboard/TimetableDashboard.jsx";
-
-// IT Admin
-import ITAdminDashboard from '@/pages/admin/ITAdminDashboard.jsx';
-import FeatureManager from '@/pages/admin/FeatureManager.jsx';
-import AddEditContentPage from '@/pages/admin/AddEditContentPage.jsx'; // You may need to create this if it was inline before
-
-// Dashboard
-import CollegeDashboard from '@/pages/dashboard/CollegeDashboard.jsx';
-import ManageDepartments from '@/pages/dashboard/ManageDepartments.jsx';
-import ManageUsers from '@/pages/dashboard/ManageUsers.jsx';
-import AccountCreationManager from '@/pages/dashboard/AccountCreationManager.jsx';
-import NoticeBoard from '@/pages/dashboard/NoticeBoard.jsx';
-import MyClasses from '@/pages/dashboard/MyClasses.jsx';
-import MyCourses from '@/pages/dashboard/MyCourses.jsx';
 import SessionExpiredPage from '@/components/common/SessionExpiredPage.jsx';
 
-import MarkAttendance from '@/pages/dashboard/MarkAttendance.jsx';
-import DigitalLibrary from '@/pages/dashboard/DigitalLibrary.jsx';
-import Chat from '@/pages/dashboard/Chat.jsx';
+// Route Guards & Reusable Components
+import ProtectedRoute from '@/components/common/ProtectedRoute';
+import ITProtectedRoute from '@/components/common/ITProtectedRoute';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
-import Attendance from '@/pages/dashboard/Attendance.jsx';
-import ExamForm from '@/pages/dashboard/ExamForm.jsx';
-import FeesTrackRecords from '@/pages/dashboard/FeesTrackRecords.jsx'; // Adjust path if needed
-import ExamManagement from '@/pages/dashboard/ExamManagement.jsx';
-import AdmitCard from '@/pages/dashboard/AdmitCard.jsx';
-import SemesterFeedback from '@/pages/dashboard/SemesterFeedback.jsx';
-import UniversityMarks from '@/pages/dashboard/UniversityMarks.jsx';
-import PaymentHistory from '@/pages/dashboard/PaymentHistory.jsx';
-import PaymentDetails from '@/pages/dashboard/PaymentDetails.jsx';
-import AcademicCalendar from '@/pages/dashboard/AcademicCalendar.jsx';
-import AdminUniversityMarks from '@/pages/dashboard/AdminUniversityMarks.jsx';
+// --- Lazy Pages & Components ---
+// Public & Auth
+const LandingPage = lazy(() => import('@/pages/public/LandingPage.jsx'));
+const CollegeSelection = lazy(() => import('@/pages/auth/CollegeSelection.jsx'));
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage.jsx'));
+const ITLoginPage = lazy(() => import('@/pages/auth/ITLoginPage.jsx'));
 
-// import ClassroomView from '@/pages/dashboard/ClassroomView';
-// import VideoPlayerPage from '@/pages/dashboard/VideoPlayerPage';
+// IT Portal
+const ITAdminDashboard = lazy(() => import('@/pages/admin/ITAdminDashboard.jsx'));
+const FeatureManager = lazy(() => import('@/pages/admin/FeatureManager.jsx'));
+const AddEditContentPage = lazy(() => import('@/pages/admin/AddEditContentPage.jsx'));
 
-//COE imports
-import COEManager from '@/components/features/coe/COEManager.jsx';
-import FacultyQuestionBank from '@/components/features/coe/FacultyQuestionBank.jsx';
-import StudentExamPortal from '@/components/features/coe/StudentExamPortal.jsx';
+// Dashboard & Portals
+const CollegeDashboard = lazy(() => import('@/pages/dashboard/CollegeDashboard.jsx'));
+const TimetableDashboard = lazy(() => import("@/pages/dashboard/TimetableDashboard.jsx"));
+const ManageDepartments = lazy(() => import('@/pages/dashboard/ManageDepartments.jsx'));
+const ManageUsers = lazy(() => import('@/pages/dashboard/ManageUsers.jsx'));
+const AccountCreationManager = lazy(() => import('@/pages/dashboard/AccountCreationManager.jsx'));
+const NoticeBoard = lazy(() => import('@/pages/dashboard/NoticeBoard.jsx'));
+const MyClasses = lazy(() => import('@/pages/dashboard/MyClasses.jsx'));
+const MyCourses = lazy(() => import('@/pages/dashboard/MyCourses.jsx'));
+const MarkAttendance = lazy(() => import('@/pages/dashboard/MarkAttendance.jsx'));
+const DigitalLibrary = lazy(() => import('@/pages/dashboard/DigitalLibrary.jsx'));
+const Chat = lazy(() => import('@/pages/dashboard/Chat.jsx'));
+const Attendance = lazy(() => import('@/pages/dashboard/Attendance.jsx'));
+const ExamForm = lazy(() => import('@/pages/dashboard/ExamForm.jsx'));
+const FeesTrackRecords = lazy(() => import('@/pages/dashboard/FeesTrackRecords.jsx'));
+const ExamManagement = lazy(() => import('@/pages/dashboard/ExamManagement.jsx'));
+const AdmitCard = lazy(() => import('@/pages/dashboard/AdmitCard.jsx'));
+const SemesterFeedback = lazy(() => import('@/pages/dashboard/SemesterFeedback.jsx'));
+const UniversityMarks = lazy(() => import('@/pages/dashboard/UniversityMarks.jsx'));
+const PaymentHistory = lazy(() => import('@/pages/dashboard/PaymentHistory.jsx'));
+const PaymentDetails = lazy(() => import('@/pages/dashboard/PaymentDetails.jsx'));
+const AcademicCalendar = lazy(() => import('@/pages/dashboard/AcademicCalendar.jsx'));
+const AdminUniversityMarks = lazy(() => import('@/pages/dashboard/AdminUniversityMarks.jsx'));
+
+// Classroom & Features
+const ClsContentDetails = lazy(() => import('@/components/features/classroom/ClsContentDetails'));
+const StandaloneViewer = lazy(() => import('@/components/features/classroom/StandaloneViewer'));
+const ClassroomView = lazy(() => import('@/pages/ClassroomView.jsx'));
+const VideoStandalone = lazy(() => import('@/pages/VideoStandalone.jsx'));
+const FacultyLeave = lazy(() => import('@/components/features/leave/FacultyLeave.jsx'));
+const AdminLeaveManager = lazy(() => import('@/components/features/leave/AdminLeaveManager.jsx'));
+
+// COE Features
+const COEManager = lazy(() => import('@/components/features/coe/COEManager.jsx'));
+const FacultyQuestionBank = lazy(() => import('@/components/features/coe/FacultyQuestionBank.jsx'));
+const StudentExamPortal = lazy(() => import('@/components/features/coe/StudentExamPortal.jsx'));
 
 
 // ✅ Helper: Identify system tenant
@@ -2106,77 +2106,342 @@ const App = () => {
   return (
     <ThemeProvider>
       <ErrorPopupProvider>
-      <Routes>
-        <Route path="/dashboard/manage-departments" element={<ManageDepartments />} />
-        <Route path="/dashboard/timetable" element={<TimetableDashboard />} />
-        // Inside App.jsx routes
-<Route path="/it-admin/features" element={<FeatureManager />} />
-        <Route 
-          path="/" 
-          element={<LandingPage navigate={navigate} />} 
-        />
-        <Route 
-          path="/college-selection" 
-          element={<CollegeSelection navigate={navigate} />} 
-        />
-        <Route path="/dashboard/video-player" element={<VideoPlayerPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashboard/:college/:role" element={<Dashboard />} />
-        <Route path="/dashboard/manage-users" element={<ManageUsers />} />
-        <Route path="/dashboard/account-creation" element={<AccountCreationManager />} />
-        <Route path="/dashboard/staff-notices" element={<NoticeBoard type="staff" />} />
-        <Route path="/dashboard/dept-notices" element={<NoticeBoard type="departmental" />} />
-        <Route path="/dashboard/my-classes" element={<MyClasses />} />
-        <Route path="/dashboard/classrooms/:id" element={<ClassroomView />} />
-        <Route path="/dashboard/courses" element={<MyCourses />} />
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+            <LoadingSpinner message="Loading page..." />
+          </div>
+        }>
+          <Routes>
+            <Route 
+              path="/dashboard/manage-departments" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <ManageDepartments />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/timetable" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <TimetableDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/it-admin/features" 
+              element={
+                <ITProtectedRoute allowedRoles={["noteloom_admin", "noteloom_manager"]}>
+                  <FeatureManager />
+                </ITProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/" 
+              element={<LandingPage navigate={navigate} />} 
+            />
+            <Route 
+              path="/college-selection" 
+              element={<CollegeSelection navigate={navigate} />} 
+            />
+            <Route 
+              path="/dashboard/video-player" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <VideoPlayerPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/login" element={<LoginPage />} />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/:college/:role" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/manage-users" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <ManageUsers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/account-creation" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <AccountCreationManager />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/staff-notices" 
+              element={
+                <ProtectedRoute allowedRoles={["faculty", "college_admin"]}>
+                  <NoticeBoard type="staff" />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/dept-notices" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <NoticeBoard type="departmental" />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/my-classes" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <MyClasses />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/classrooms/:id" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <ClassroomView />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/courses" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <MyCourses />
+                </ProtectedRoute>
+              } 
+            />
 
-        <Route path="dashboard/attendance-marking" element={<MarkAttendance />} />
-        <Route path="dashboard/library" element={<DigitalLibrary />} />
-        <Route path="/dashboard/chat" element={<Chat />} />
+            <Route 
+              path="dashboard/attendance-marking" 
+              element={
+                <ProtectedRoute allowedRoles={["faculty", "college_admin"]}>
+                  <MarkAttendance />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="dashboard/library" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <DigitalLibrary />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/chat" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <Chat />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/attendance" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <Attendance />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/classrooms/:classId/content/:contentId" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <ClsContentDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/pdf-viewer" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <StandaloneViewer />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/video-standalone" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <VideoStandalone />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/leave-apply" 
+              element={
+                <ProtectedRoute allowedRoles={["faculty"]}>
+                  <FacultyLeave />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/leave-manager" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <AdminLeaveManager />
+                </ProtectedRoute>
+              } 
+            />
 
-        <Route path="/dashboard/attendance" element={<Attendance />} />
-        
-<Route 
-  path="/dashboard/classrooms/:classId/content/:contentId" 
-  element={<ClsContentDetails />} 
-/>
-<Route path="/pdf-viewer" element={<StandaloneViewer />} />
-<Route path="/video-standalone" element={<VideoStandalone />} />
-<Route path="/dashboard/leave-apply" element={<FacultyLeave />} />
-<Route path="/dashboard/leave-manager" element={<AdminLeaveManager />} />
-
-
-{/* COE Routes */}
-<Route path="/dashboard/coe-manage" element={<COEManager />} />
-<Route path="/dashboard/question-bank" element={<FacultyQuestionBank />} />
-<Route path="/dashboard/exam-portal" element={<StudentExamPortal />} />
-{/* <Route path="/dashboard/results" element={<StudentExamPortal />} /> Reusing portal for results tab */}
-<Route path="/dashboard/exam-form" element={<ExamForm />} />
-<Route path="/dashboard/fees-exam-records" element={<FeesTrackRecords />} />
-<Route path="/dashboard/fees" element={<PaymentHistory />} />
-<Route path="/dashboard/payment-details" element={<PaymentDetails />} />
-<Route path="/dashboard/exam-management" element={<ExamManagement />} />
-<Route path="/dashboard/admit-card" element={<AdmitCard />} />
-<Route path="/dashboard/feedback" element={<SemesterFeedback />} />
-<Route path="/dashboard/results" element={<UniversityMarks />} />
-<Route path="/dashboard/org-calendar" element={<AcademicCalendar />} />
-<Route path="/dashboard/university-marks" element={<AdminUniversityMarks />} />
-        
-        {/* IT Portal Routes */}
-        <Route path="/it-login" element={<ITLoginPage />} />
-        <Route path="/it-admin" element={<ITAdminDashboard />} />
-        
-        // ADD THESE NEW ROUTES:
-<Route path="/it-admin/content/add" element={<AddEditContentPage />} />
-<Route path="/it-admin/content/edit" element={<AddEditContentPage />} />
-<Route
-  path="/it-admin/feature-manager"
-  element={<FeatureManager />}
-/>
-
-      </Routes>
-      <NoteloomAi />
+            {/* COE Routes */}
+            <Route 
+              path="/dashboard/coe-manage" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <COEManager />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/question-bank" 
+              element={
+                <ProtectedRoute allowedRoles={["faculty"]}>
+                  <FacultyQuestionBank />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/exam-portal" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <StudentExamPortal />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/exam-form" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <ExamForm />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/fees-exam-records" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <FeesTrackRecords />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/fees" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <PaymentHistory />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/payment-details" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <PaymentDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/exam-management" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <ExamManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/admit-card" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <AdmitCard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/feedback" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <SemesterFeedback />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/results" 
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <UniversityMarks />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/org-calendar" 
+              element={
+                <ProtectedRoute allowedRoles={["student", "faculty", "college_admin"]}>
+                  <AcademicCalendar />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/university-marks" 
+              element={
+                <ProtectedRoute allowedRoles={["college_admin"]}>
+                  <AdminUniversityMarks />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* IT Portal Routes */}
+            <Route path="/it-login" element={<ITLoginPage />} />
+            <Route 
+              path="/it-admin" 
+              element={
+                <ITProtectedRoute allowedRoles={["noteloom_admin", "noteloom_manager"]}>
+                  <ITAdminDashboard />
+                </ITProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/it-admin/content/add" 
+              element={
+                <ITProtectedRoute allowedRoles={["noteloom_admin", "noteloom_manager"]}>
+                  <AddEditContentPage />
+                </ITProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/it-admin/content/edit" 
+              element={
+                <ITProtectedRoute allowedRoles={["noteloom_admin", "noteloom_manager"]}>
+                  <AddEditContentPage />
+                </ITProtectedRoute>
+              } 
+            />
+            <Route
+              path="/it-admin/feature-manager"
+              element={
+                <ITProtectedRoute allowedRoles={["noteloom_admin", "noteloom_manager"]}>
+                  <FeatureManager />
+                </ITProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
+        <NoteloomAi />
       </ErrorPopupProvider>
     </ThemeProvider>
   );
